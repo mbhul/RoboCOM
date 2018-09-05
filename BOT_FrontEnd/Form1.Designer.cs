@@ -62,6 +62,9 @@
             this.ControllerPoller = new System.ComponentModel.BackgroundWorker();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.panel2 = new System.Windows.Forms.Panel();
+            this.TextInPanel = new System.Windows.Forms.Panel();
+            this.SaveFileBtn = new System.Windows.Forms.Button();
+            this.OpenFileBtn = new System.Windows.Forms.Button();
             this.panel1 = new System.Windows.Forms.Panel();
             this.InComTxt = new System.Windows.Forms.RichTextBox();
             this.PadXY_View = new System.Windows.Forms.PictureBox();
@@ -77,20 +80,17 @@
             this.label2 = new System.Windows.Forms.Label();
             this.InComLbl = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
-            this.TextInPanel = new System.Windows.Forms.Panel();
-            this.SaveFileBtn = new System.Windows.Forms.Button();
-            this.OpenFileBtn = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.PadInPanel.SuspendLayout();
             this.groupBox3.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.panel2.SuspendLayout();
+            this.TextInPanel.SuspendLayout();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.PadXY_View)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.PadZ_View)).BeginInit();
             this.groupBox2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.TimerIntSelect)).BeginInit();
-            this.TextInPanel.SuspendLayout();
             this.SuspendLayout();
             // 
             // OutComTxt
@@ -317,6 +317,7 @@
             // 
             // ControllerSelect
             // 
+            this.ControllerSelect.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.ControllerSelect.FormattingEnabled = true;
             this.ControllerSelect.Location = new System.Drawing.Point(12, 23);
             this.ControllerSelect.Name = "ControllerSelect";
@@ -355,6 +356,43 @@
             this.panel2.Name = "panel2";
             this.panel2.Size = new System.Drawing.Size(250, 477);
             this.panel2.TabIndex = 23;
+            // 
+            // TextInPanel
+            // 
+            this.TextInPanel.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.TextInPanel.Controls.Add(this.SaveFileBtn);
+            this.TextInPanel.Controls.Add(this.OpenFileBtn);
+            this.TextInPanel.Location = new System.Drawing.Point(1, 1);
+            this.TextInPanel.Name = "TextInPanel";
+            this.TextInPanel.Size = new System.Drawing.Size(251, 61);
+            this.TextInPanel.TabIndex = 17;
+            // 
+            // SaveFileBtn
+            // 
+            this.SaveFileBtn.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.SaveFileBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.SaveFileBtn.Location = new System.Drawing.Point(5, 33);
+            this.SaveFileBtn.Name = "SaveFileBtn";
+            this.SaveFileBtn.Size = new System.Drawing.Size(241, 23);
+            this.SaveFileBtn.TabIndex = 5;
+            this.SaveFileBtn.Text = "Save File";
+            this.SaveFileBtn.UseVisualStyleBackColor = true;
+            this.SaveFileBtn.Click += new System.EventHandler(this.SaveFileBtn_Click);
+            // 
+            // OpenFileBtn
+            // 
+            this.OpenFileBtn.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.OpenFileBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.OpenFileBtn.Location = new System.Drawing.Point(5, 4);
+            this.OpenFileBtn.Name = "OpenFileBtn";
+            this.OpenFileBtn.Size = new System.Drawing.Size(241, 23);
+            this.OpenFileBtn.TabIndex = 4;
+            this.OpenFileBtn.Text = "Open File";
+            this.OpenFileBtn.UseVisualStyleBackColor = true;
+            this.OpenFileBtn.Click += new System.EventHandler(this.OpenFileBtn_Click);
             // 
             // panel1
             // 
@@ -530,43 +568,6 @@
             this.label1.TabIndex = 17;
             this.label1.Text = "X";
             // 
-            // TextInPanel
-            // 
-            this.TextInPanel.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.TextInPanel.Controls.Add(this.SaveFileBtn);
-            this.TextInPanel.Controls.Add(this.OpenFileBtn);
-            this.TextInPanel.Location = new System.Drawing.Point(1, 1);
-            this.TextInPanel.Name = "TextInPanel";
-            this.TextInPanel.Size = new System.Drawing.Size(251, 61);
-            this.TextInPanel.TabIndex = 17;
-            // 
-            // SaveFileBtn
-            // 
-            this.SaveFileBtn.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.SaveFileBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.SaveFileBtn.Location = new System.Drawing.Point(5, 33);
-            this.SaveFileBtn.Name = "SaveFileBtn";
-            this.SaveFileBtn.Size = new System.Drawing.Size(241, 23);
-            this.SaveFileBtn.TabIndex = 5;
-            this.SaveFileBtn.Text = "Save File";
-            this.SaveFileBtn.UseVisualStyleBackColor = true;
-            this.SaveFileBtn.Click += new System.EventHandler(this.SaveFileBtn_Click);
-            // 
-            // OpenFileBtn
-            // 
-            this.OpenFileBtn.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.OpenFileBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.OpenFileBtn.Location = new System.Drawing.Point(5, 4);
-            this.OpenFileBtn.Name = "OpenFileBtn";
-            this.OpenFileBtn.Size = new System.Drawing.Size(241, 23);
-            this.OpenFileBtn.TabIndex = 4;
-            this.OpenFileBtn.Text = "Open File";
-            this.OpenFileBtn.UseVisualStyleBackColor = true;
-            this.OpenFileBtn.Click += new System.EventHandler(this.OpenFileBtn_Click);
-            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -583,6 +584,7 @@
             this.tableLayoutPanel1.ResumeLayout(false);
             this.panel2.ResumeLayout(false);
             this.panel2.PerformLayout();
+            this.TextInPanel.ResumeLayout(false);
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.PadXY_View)).EndInit();
@@ -590,7 +592,6 @@
             this.groupBox2.ResumeLayout(false);
             this.groupBox2.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.TimerIntSelect)).EndInit();
-            this.TextInPanel.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }

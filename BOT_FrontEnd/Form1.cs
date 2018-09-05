@@ -257,7 +257,7 @@ namespace BOT_FrontEnd
                     double x = 0;
                     double y = 0;
                     double z = 0;
-                    double key_increment = this.controller.getFS() / 2;
+                    double key_increment = this.controller.getFS() / 2;             //half of full scale (unsigned)
                     x += KeyboardInfo.GetKeyState(Keys.Left).IsPressed ? -0.5 : 0;
                     x += KeyboardInfo.GetKeyState(Keys.Right).IsPressed ? 0.5 : 0;
                     y += KeyboardInfo.GetKeyState(Keys.Up).IsPressed ? -0.5 : 0;
@@ -268,8 +268,8 @@ namespace BOT_FrontEnd
 
                     DrawXY((int)x, (int)y);
 
-                    x = ((x / key_increment) - 0.5) * SendTimer.Interval / 500.0;
-                    y = ((y / key_increment) - 0.5) * SendTimer.Interval / 500.0;
+                    x = ((x / key_increment) - 1) * (SendTimer.Interval / 250.0);
+                    y = -1 * ((y / key_increment) - 1) * (SendTimer.Interval / 250.0);
 
                     cmd = String.Format("\r\nG91X{0:0.00}Y{1:0.00}Z{2:0.00};", x, y, z);
                     if (Math.Abs(x) > 0.05 || Math.Abs(y) > 0.05 || Math.Abs(z) > 0.05)
@@ -517,7 +517,7 @@ namespace BOT_FrontEnd
         }
 
         /********************************************************************************
-         * EVENT HANDLER:   ReadTimer_Tick
+         * EVENT HANDLER:   ControllerPoller_DoWork
          * Description:     
          ********************************************************************************/
         private void ControllerPoller_DoWork(object sender, DoWorkEventArgs e)
@@ -536,7 +536,7 @@ namespace BOT_FrontEnd
         }
 
         /********************************************************************************
-         * EVENT HANDLER:   ReadTimer_Tick
+         * EVENT HANDLER:   ControllerPoller_RunWorkerCompleted
          * Description:     
          ********************************************************************************/
         private void ControllerPoller_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
@@ -561,7 +561,7 @@ namespace BOT_FrontEnd
         }
 
         /********************************************************************************
-         * EVENT HANDLER:   ReadTimer_Tick
+         * EVENT HANDLER:   radioText_CheckedChanged
          * Description:     
          ********************************************************************************/
         private void radioText_CheckedChanged(object sender, EventArgs e)
