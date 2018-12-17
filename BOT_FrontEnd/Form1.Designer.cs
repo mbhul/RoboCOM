@@ -50,7 +50,6 @@
             this.label5 = new System.Windows.Forms.Label();
             this.BaudSelect = new System.Windows.Forms.ComboBox();
             this.label4 = new System.Windows.Forms.Label();
-            this.PortNumber = new System.Windows.Forms.MaskedTextBox();
             this.label3 = new System.Windows.Forms.Label();
             this.ConnReset = new System.Windows.Forms.Button();
             this.SendTimer = new System.Windows.Forms.Timer(this.components);
@@ -80,6 +79,7 @@
             this.label2 = new System.Windows.Forms.Label();
             this.InComLbl = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
+            this.PortNumber = new System.Windows.Forms.ComboBox();
             this.groupBox1.SuspendLayout();
             this.PadInPanel.SuspendLayout();
             this.groupBox3.SuspendLayout();
@@ -152,13 +152,13 @@
             // 
             this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBox1.Controls.Add(this.PortNumber);
             this.groupBox1.Controls.Add(this.textBox2);
             this.groupBox1.Controls.Add(this.label6);
             this.groupBox1.Controls.Add(this.textBox1);
             this.groupBox1.Controls.Add(this.label5);
             this.groupBox1.Controls.Add(this.BaudSelect);
             this.groupBox1.Controls.Add(this.label4);
-            this.groupBox1.Controls.Add(this.PortNumber);
             this.groupBox1.Controls.Add(this.label3);
             this.groupBox1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.groupBox1.Location = new System.Drawing.Point(6, 72);
@@ -222,7 +222,7 @@
             "115200"});
             this.BaudSelect.Location = new System.Drawing.Point(67, 23);
             this.BaudSelect.Name = "BaudSelect";
-            this.BaudSelect.Size = new System.Drawing.Size(92, 21);
+            this.BaudSelect.Size = new System.Drawing.Size(76, 21);
             this.BaudSelect.TabIndex = 3;
             // 
             // label4
@@ -235,23 +235,12 @@
             this.label4.TabIndex = 2;
             this.label4.Text = "Baud Rate:";
             // 
-            // PortNumber
-            // 
-            this.PortNumber.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.PortNumber.Location = new System.Drawing.Point(210, 24);
-            this.PortNumber.Mask = "00";
-            this.PortNumber.Name = "PortNumber";
-            this.PortNumber.Size = new System.Drawing.Size(24, 20);
-            this.PortNumber.TabIndex = 1;
-            this.PortNumber.Text = "4";
-            this.PortNumber.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
-            // 
             // label3
             // 
             this.label3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label3.AutoSize = true;
             this.label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label3.Location = new System.Drawing.Point(165, 27);
+            this.label3.Location = new System.Drawing.Point(152, 27);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(39, 13);
             this.label3.TabIndex = 0;
@@ -568,6 +557,14 @@
             this.label1.TabIndex = 17;
             this.label1.Text = "X";
             // 
+            // PortNumber
+            // 
+            this.PortNumber.FormattingEnabled = true;
+            this.PortNumber.Location = new System.Drawing.Point(193, 23);
+            this.PortNumber.Name = "PortNumber";
+            this.PortNumber.Size = new System.Drawing.Size(41, 21);
+            this.PortNumber.TabIndex = 8;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -605,7 +602,6 @@
         private System.Windows.Forms.Button SendBtn;
         private System.Windows.Forms.SaveFileDialog SaveFileDlg;
         private System.Windows.Forms.GroupBox groupBox1;
-        private System.Windows.Forms.MaskedTextBox PortNumber;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.ComboBox BaudSelect;
         private System.Windows.Forms.Label label4;
@@ -642,6 +638,7 @@
         private System.Windows.Forms.Panel TextInPanel;
         private System.Windows.Forms.Button SaveFileBtn;
         private System.Windows.Forms.Button OpenFileBtn;
+        private System.Windows.Forms.ComboBox PortNumber;
     }
 }
 

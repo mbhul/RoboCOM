@@ -28,10 +28,10 @@ namespace BOT_FrontEnd
             //Initialize and set defaults
             InitializeComponent();
             bold_font = new Font(InComTxt.Font, FontStyle.Bold);
-            PortNumber.Text = "8";
             BaudSelect.SelectedIndex = 2;
             sent_stop = true;
             PauseTransfer = false;
+            populatePortDropDown();
             
             ttTimer = new ToolTip();
             ttTimer.SetToolTip(TimerLabel, "The interval (in milliseconds) between successive lines being written to the COM port.");
@@ -51,6 +51,27 @@ namespace BOT_FrontEnd
         private void Form_Load(object sender, EventArgs e)
         {
             
+        }
+
+        /********************************************************************************
+         * FUNCTION:    populatePortDropDown
+         * Description: Get list of COM ports and populate the port selection drop-down
+         * Parameters:  None
+         ********************************************************************************/
+        private void populatePortDropDown()
+        {
+            string[] port_names = System.IO.Ports.SerialPort.GetPortNames();
+            this.PortNumber.Items.Clear();
+            
+            foreach (string port in port_names)
+            {
+                PortNumber.Items.Add(port.Replace("COM", ""));
+            }
+
+            if (PortNumber.Items.Count > 0)
+            {
+                PortNumber.SelectedIndex = 0;
+            }
         }
 
         /********************************************************************************
@@ -202,8 +223,9 @@ namespace BOT_FrontEnd
             }
             else //else open the COM port
             {
-                MyVCOM.PortName = "COM" + PortNumber.Text;
+                MyVCOM.PortName = "COM" + PortNumber.SelectedItem.ToString();
                 MyVCOM.BaudRate = Convert.ToInt32(BaudSelect.Text);
+                MyVCOM.DtrEnable = true;
 
                 try
                 {
