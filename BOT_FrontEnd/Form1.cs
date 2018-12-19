@@ -9,19 +9,26 @@ using System.IO;
 using System.Windows.Forms;
 using SlimDX.DirectInput;
 using System.Runtime.InteropServices;
+using System.Xml;
 
 namespace BOT_FrontEnd
 {
     public partial class Form1 : Form
     {
-        const float SPEED = 25; //mm/s
+        //const float SPEED = 25; //mm/s
+        //Maximum number of command lines to maintain in the rich text box for history. 
+        const int MAX_CMD_LINES = 10000;
 
         private Controller controller;
         private List<Guid> connected_controllers;
         private bool sent_stop;
         private bool PauseTransfer;
+        private bool z_persist;
+        private double z_value;
+        private string command_prev;
 
         private DirectInput DI;
+        private XmlDocument configXML;
 
         public Form1()
         {
@@ -44,6 +51,11 @@ namespace BOT_FrontEnd
 
             InComTxt_default_position = InComTxt.Top;
             InComLbl_default_position = InComLbl.Top;
+
+            configXML = new XmlDocument();
+            configXML.LoadXml(Properties.Resources.Config);
+            z_persist = Boolean.Parse(configXML.SelectNodes("//Channel[@param='CH1']").Item(0).Attributes["persist"].Value);
+            command_prev = "";
 
             DI = new DirectInput();
         }
@@ -252,6 +264,40 @@ namespace BOT_FrontEnd
          ********************************************************************************/
         private void SendTimer_Tick(object sender, EventArgs e)
         {
+            string formatstring = "";
+            double x = 0;
+            double y = 0;
+            double z = 0;
+            double a = 0;
+            double b = 0;
+            double x_fs, y_fs, z_fs, a_fs, b_fs;
+            double x_def, y_def, z_def, a_def, b_def;
+            double z_gain;
+
+            //Store configuration values for later use
+            z_fs = Double.Parse(configXML.SelectNodes("//Channel[@param='CH1']").Item(0).Attributes["max"].Value) -
+                Double.Parse(configXML.SelectNodes("//Channel[@param='CH1']").Item(0).Attributes["min"].Value);
+
+            x_fs = Double.Parse(configXML.SelectNodes("//Channel[@param='CH2']").Item(0).Attributes["max"].Value) -
+                        Double.Parse(configXML.SelectNodes("//Channel[@param='CH2']").Item(0).Attributes["min"].Value);
+
+            y_fs = Double.Parse(configXML.SelectNodes("//Channel[@param='CH3']").Item(0).Attributes["max"].Value) -
+                Double.Parse(configXML.SelectNodes("//Channel[@param='CH3']").Item(0).Attributes["min"].Value);
+
+            a_fs = Double.Parse(configXML.SelectNodes("//Channel[@param='CH4']").Item(0).Attributes["max"].Value) -
+                Double.Parse(configXML.SelectNodes("//Channel[@param='CH4']").Item(0).Attributes["min"].Value);
+
+            b_fs = Double.Parse(configXML.SelectNodes("//Channel[@param='CH5']").Item(0).Attributes["max"].Value) -
+                Double.Parse(configXML.SelectNodes("//Channel[@param='CH5']").Item(0).Attributes["min"].Value);
+
+            z_def = Double.Parse(configXML.SelectNodes("//Channel[@param='CH1']").Item(0).Attributes["default"].Value);
+            x_def = Double.Parse(configXML.SelectNodes("//Channel[@param='CH2']").Item(0).Attributes["default"].Value);
+            y_def = Double.Parse(configXML.SelectNodes("//Channel[@param='CH3']").Item(0).Attributes["default"].Value);
+            a_def = Double.Parse(configXML.SelectNodes("//Channel[@param='CH4']").Item(0).Attributes["default"].Value);
+            b_def = Double.Parse(configXML.SelectNodes("//Channel[@param='CH5']").Item(0).Attributes["default"].Value);
+
+            z_gain = Double.Parse(configXML.SelectNodes("//Channel[@param='CH1']").Item(0).Attributes["gain"].Value);
+
             //If the 'Text' send option is checked and there are commands(lines) left to write:
             if (radioText.Checked && instruction_count < instructions.Length)
             {
@@ -269,85 +315,231 @@ namespace BOT_FrontEnd
             }
 
             //If the controller(gamepad/keyboard) send option is checked:
+             
             if (radioPad.Checked)
             {
                 string cmd = "";
 
+                #region Keyboard Input Selected
                 //if 'Keyboard'(arrow keys) is selected as the current method of input
                 if ((String)ControllerSelect.SelectedItem == "Keyboard")
                 {
-                    double x = 0;
-                    double y = 0;
-                    double z = 0;
-                    double key_increment = this.controller.getFS() / 2;             //half of full scale (unsigned)
+                    double key_increment = this.controller.getFS() / 2;
+
+                    //**** Get key states *****//
                     x += KeyboardInfo.GetKeyState(Keys.Left).IsPressed ? -0.5 : 0;
                     x += KeyboardInfo.GetKeyState(Keys.Right).IsPressed ? 0.5 : 0;
                     y += KeyboardInfo.GetKeyState(Keys.Up).IsPressed ? -0.5 : 0;
                     y += KeyboardInfo.GetKeyState(Keys.Down).IsPressed ? 0.5 : 0;
+                    z += KeyboardInfo.GetKeyState(Keys.W).IsPressed ? 0.05 : 0;
+                    z += KeyboardInfo.GetKeyState(Keys.S).IsPressed ? -0.05 : 0;
 
+                    //**** Scale key values for drawing *****//
                     x = (x + 1) * key_increment;
                     y = (y + 1) * key_increment;
+                    z *= key_increment;
+
+                    if(z_persist)
+                    {
+                        z += z_value;
+                        z_value = z;
+                    }
 
                     DrawXY((int)x, (int)y);
+                    DrawZ_Persist((int)z);
 
-                    x = ((x / key_increment) - 1) * (SendTimer.Interval / 250.0);
-                    y = -1 * ((y / key_increment) - 1) * (SendTimer.Interval / 250.0);
+                    //**** Convert the values to the configured command scale (in Config.xml) *****//
+                    x = (((x / key_increment) - 1) * 0.5) * x_fs;
+                    x += x_def;
 
-                    cmd = String.Format("\r\nG91X{0:0.00}Y{1:0.00}Z{2:0.00};", x, y, z);
-                    if (Math.Abs(x) > 0.05 || Math.Abs(y) > 0.05 || Math.Abs(z) > 0.05)
+                    y = -1 * (((y / key_increment) - 1) * 0.5) * y_fs;
+                    y += y_def;
+
+                    z = ((z / key_increment) * 0.5) * z_fs;
+                    z += z_def;
+
+                    //**** Build the output command format string *****//
+                    formatstring = "\r\n" + configXML.SelectNodes("//StartOfFrame[@type='relative']").Item(0).InnerXml;
+                    formatstring += configXML.SelectNodes("//Channel[@param='CH1']").Item(0).InnerXml + "{0:";
+                    formatstring += configXML.SelectNodes("//Channel[@param='CH1']").Item(0).Attributes["precision"].Value + "}";
+                    formatstring += configXML.SelectNodes("//ChannelSeparator").Item(0).InnerXml;
+
+                    formatstring += configXML.SelectNodes("//Channel[@param='CH2']").Item(0).InnerXml + "{1:";
+                    formatstring += configXML.SelectNodes("//Channel[@param='CH2']").Item(0).Attributes["precision"].Value + "}";
+                    formatstring += configXML.SelectNodes("//ChannelSeparator").Item(0).InnerXml;
+
+                    formatstring += configXML.SelectNodes("//Channel[@param='CH3']").Item(0).InnerXml + "{2:";
+                    formatstring += configXML.SelectNodes("//Channel[@param='CH3']").Item(0).Attributes["precision"].Value + "}";
+                    formatstring += ";";
+
+                    cmd = String.Format(formatstring, z, x, y);
+                    if (Math.Abs(x - x_def) > (0.05 * x_fs) ||
+                        Math.Abs(y - y_def) > (0.05 * y_fs) ||
+                        (Math.Abs(z) > (z_def + (0.05 * z_fs)) && (z_value != z)))
                     {
-                        InComTxt.AppendText(cmd);
-                        if (MyVCOM.IsOpen) { MyVCOM.Write(cmd); }
-                        sent_stop = false;
+                        if (!(chkRepeat.Checked && cmd == command_prev))
+                        {
+                            InComTxt.AppendText(cmd);
+                            if (MyVCOM.IsOpen) { MyVCOM.Write(cmd); }
+                            sent_stop = false;
+                        }
                     }
                     else if (sent_stop == false)
                     {
-                        InComTxt.AppendText("\r\nG91X0Y0Z0;");
-                        if (MyVCOM.IsOpen) { MyVCOM.Write("\r\nG91X0Y0Z0;"); }
+                        try
+                        {
+                            formatstring = "\r\n" + configXML.SelectNodes("//StopCommand[@ebable='true']").Item(0).InnerXml;
+                            InComTxt.AppendText(formatstring);
+                            if (MyVCOM.IsOpen) { MyVCOM.Write(formatstring); }
+                        }
+                        catch(Exception exc)
+                        {
+                            //Do nothing
+                        }
                         sent_stop = true;
                     }
                 }
+                #endregion
+                #region DirectX Controller Selected
                 else
                 {
                     JoystickState state = controller.getState();
                     bool[] buttons = state.GetButtons();
                     int[] pov = state.GetPointOfViewControllers();
-                    DrawXY(state.Z, state.RotationZ);
-                    DrawZ(state.Y);
+                    float fs = (float)controller.getFS();
+                    bool z_condition = false;
 
+                    //**** Scale controller values for drawing *****//
+                    x = limitControllerScaleValue(state.Z, 0.0, fs);
+                    y = limitControllerScaleValue(state.RotationZ, 0.0, fs);
+                    DrawXY((int)x, (int)y);
+
+                    if (z_persist)
+                    {
+                        z = -1 * (state.Y - (fs / 2)) * z_gain;
+                        z += z_value;
+                        z = limitControllerScaleValue(z, 0.0, fs);
+                        z_value = z;
+                        DrawZ_Persist((int)z);
+                    }
+                    else
+                    {
+                        z = state.Y;
+                        DrawZ((int)z);
+                    }
+
+                    //**** Convert the values to the configured command scale (in Config.xml) *****//
                     double angle_A_B = (pov[0] == -1) ? -1 : (pov[0] / 100) * (Math.PI / 180);
 
-                    float fs = (float)controller.getFS();
-                    float x = (((float)(state.Z - fs / 2) / fs) * SPEED * (float)(SendTimer.Interval / 1000.0));
-                    float y = -1 * (((float)(state.RotationZ - fs / 2) / fs) * SPEED * (float)(SendTimer.Interval / 1000.0));
-                    float z = (((float)(state.Y - fs / 2) / fs) * SPEED * (float)(SendTimer.Interval / 1000.0));
+                    x = ((float)(x - fs / 2) / fs) * x_fs;
+                    x += x_def;
 
-                    double b = (angle_A_B == -1) ? 0 : -0.1 * Math.Sin(angle_A_B);
-                    double a = (angle_A_B == -1) ? 0 : 0.1 * Math.Cos(angle_A_B);                    
+                    y = -1 * ((float)(y - fs / 2) / fs) * y_fs;
+                    y += y_def;
 
-                    cmd = "\r\nG91";
-                    if (Math.Abs(x) > 0.05) { cmd = String.Format(cmd + "Y{0:0.0000}", x); }
-                    if (Math.Abs(y) > 0.05) { cmd = String.Format(cmd + "X{0:0.0000}", -y); }
-                    if (Math.Abs(z) > 0.05) { cmd = String.Format(cmd + "Z{0:0.0000}", z); }
-                    if (Math.Abs(a) > 0.05) { cmd = String.Format(cmd + "B{0:0.0000}", a); }
-                    if (Math.Abs(b) > 0.05) { cmd = String.Format(cmd + "A{0:0.0000}", -b); }
+                    if (z_persist)
+                    {
+                        z = ((float)z / fs) * z_fs;
+                    }
+                    else
+                    {
+                        z = ((float)(z - fs / 2) / fs) * z_fs;
+                    }
+                    z += z_def;
+
+                    a = (angle_A_B == -1) ? 0 : -0.1 * Math.Cos(angle_A_B);
+                    a += a_def;
+
+                    b = (angle_A_B == -1) ? 0 : 0.1 * Math.Sin(angle_A_B);
+                    b += b_def;
+
+                    cmd = "\r\n" + configXML.SelectNodes("//StartOfFrame[@type='relative']").Item(0).InnerXml;
+
+                    //**** Convert the values to the configured command scale (in Config.xml) *****//
+                    if (z_persist)
+                    {
+                        z_condition = (Math.Abs(z) > (z_def + (0.05 * z_fs)) && (z_value != z));
+                    }
+                    else
+                    {
+                        z_condition = (Math.Abs(z - z_def) > (0.05 * z_fs) && (z_value != z));
+                    }
+
+                    formatstring = configXML.SelectNodes("//Channel[@param='CH1']").Item(0).InnerXml + "{0:";
+                    formatstring += configXML.SelectNodes("//Channel[@param='CH1']").Item(0).Attributes["precision"].Value + "}";
+                    formatstring += configXML.SelectNodes("//ChannelSeparator").Item(0).InnerXml;
+                    cmd = String.Format(cmd + formatstring, z);
+
+                    formatstring = configXML.SelectNodes("//Channel[@param='CH2']").Item(0).InnerXml + "{0:";
+                    formatstring += configXML.SelectNodes("//Channel[@param='CH2']").Item(0).Attributes["precision"].Value + "}";
+                    formatstring += configXML.SelectNodes("//ChannelSeparator").Item(0).InnerXml;
+                    cmd = String.Format(cmd + formatstring, x);
+
+                    formatstring = configXML.SelectNodes("//Channel[@param='CH3']").Item(0).InnerXml + "{0:";
+                    formatstring += configXML.SelectNodes("//Channel[@param='CH3']").Item(0).Attributes["precision"].Value + "}";
+                    formatstring += configXML.SelectNodes("//ChannelSeparator").Item(0).InnerXml;
+                    cmd = String.Format(cmd + formatstring, y);
+
+                    formatstring = configXML.SelectNodes("//Channel[@param='CH4']").Item(0).InnerXml + "{0:";
+                    formatstring += configXML.SelectNodes("//Channel[@param='CH4']").Item(0).Attributes["precision"].Value + "}";
+                    formatstring += configXML.SelectNodes("//ChannelSeparator").Item(0).InnerXml;
+                    cmd = String.Format(cmd + formatstring, a);
+
+                    formatstring = configXML.SelectNodes("//Channel[@param='CH5']").Item(0).InnerXml + "{0:";
+                    formatstring += configXML.SelectNodes("//Channel[@param='CH5']").Item(0).Attributes["precision"].Value + "}";
+                    cmd = String.Format(cmd + formatstring, b); 
+
                     cmd += ";";
 
-                    if (Math.Abs(x) > 0.05 || Math.Abs(y) > 0.05 || Math.Abs(z) > 0.05 || Math.Abs(a) > 0.05 || Math.Abs(b) > 0.05)
+                    if (Math.Abs(x - x_def) > (0.05 * x_fs) ||
+                        Math.Abs(y - y_def) > (0.05 * y_fs) ||
+                        z_condition || 
+                        Math.Abs(a) > 0.05 || Math.Abs(b) > 0.05)
                     {
-                        InComTxt.AppendText(cmd);
-                        if (MyVCOM.IsOpen) { MyVCOM.Write(cmd); }
-                        sent_stop = false;
+                        if (!(chkRepeat.Checked && cmd == command_prev))
+                        {
+                            InComTxt.AppendText(cmd);
+                            if (MyVCOM.IsOpen) { MyVCOM.Write(cmd); }
+                            sent_stop = false;
+                        }
                     }
                     else if (sent_stop == false)
                     {
-                        InComTxt.AppendText("\r\nG91X0Y0Z0;");
-                        if (MyVCOM.IsOpen) { MyVCOM.Write("\r\nG91X0Y0Z0;"); }
+                        try
+                        {
+                            formatstring = "\r\n" + configXML.SelectNodes("//StopCommand[@ebable='true']").Item(0).InnerXml;
+                            InComTxt.AppendText(formatstring);
+                            if (MyVCOM.IsOpen) { MyVCOM.Write(formatstring); }
+                        }
+                        catch (Exception exc)
+                        {
+                            //Do nothing
+                        }
                         sent_stop = true;
                     }
                 }
+                #endregion
                 ScrollToEnd(InComTxt);
+
+                command_prev = cmd;
             }
+        }
+
+        private double limitControllerScaleValue(double pInput, double pMin, double pMax)
+        {
+            double ret_val = pInput;
+
+            if(pInput < pMin)
+            {
+                ret_val = pMin;
+            }
+            else if (pInput > pMax)
+            {
+                ret_val = pMax;
+            }
+            else { }
+
+            return ret_val;
         }
 
         /********************************************************************************
@@ -505,6 +697,20 @@ namespace BOT_FrontEnd
             PadZ_View.Image = (Image)bitmap;
         }
 
+        private void DrawZ_Persist(long position)
+        {
+            Bitmap bitmap = new Bitmap(PadZ_View.Width, PadZ_View.Height);
+            float position_center = PadZ_View.Height * ((float)position / (float)controller.getFS());
+
+            using (Graphics gr = Graphics.FromImage(bitmap))
+            {
+                Rectangle rect = new Rectangle(0, PadZ_View.Height - (int)position_center, PadZ_View.Width, (int)position_center);
+                gr.FillRectangle(Brushes.GreenYellow, rect);
+            }
+
+            PadZ_View.Image = (Image)bitmap;
+        }
+
         /********************************************************************************
          * FUNCTION:        DrawXY
          * Description:     
@@ -589,6 +795,34 @@ namespace BOT_FrontEnd
         private void radioText_CheckedChanged(object sender, EventArgs e)
         {
 
+        }
+
+        /********************************************************************************
+         * EVENT HANDLER:   InComTxt_TextChanged
+         * Description:     This handler limits the number of lines displayed on the command line
+         *                  text box by effectively scrolling the old lines off 
+         ********************************************************************************/
+        private void InComTxt_TextChanged(object sender, EventArgs e)
+        {
+            if(InComTxt.Lines.Count() > MAX_CMD_LINES)
+            {
+                InComTxt.Select(0, InComTxt.GetFirstCharIndexFromLine(1));
+                InComTxt.SelectedText = "";
+            }
+        }
+
+        /********************************************************************************
+         * EVENT HANDLER:   OutComTxt_TextChanged
+         * Description:     This handler limits the number of lines displayed on the command line
+         *                  text box by effectively scrolling the old lines off 
+         ********************************************************************************/
+        private void OutComTxt_TextChanged(object sender, EventArgs e)
+        {
+            if (OutComTxt.Lines.Count() > MAX_CMD_LINES)
+            {
+                OutComTxt.Select(0, OutComTxt.GetFirstCharIndexFromLine(1));
+                OutComTxt.SelectedText = "";
+            }
         } 
         
     }

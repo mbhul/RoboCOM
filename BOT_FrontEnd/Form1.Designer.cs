@@ -44,6 +44,7 @@
             this.SendBtn = new System.Windows.Forms.Button();
             this.SaveFileDlg = new System.Windows.Forms.SaveFileDialog();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.PortNumber = new System.Windows.Forms.ComboBox();
             this.textBox2 = new System.Windows.Forms.TextBox();
             this.label6 = new System.Windows.Forms.Label();
             this.textBox1 = new System.Windows.Forms.TextBox();
@@ -70,6 +71,7 @@
             this.PadZ_View = new System.Windows.Forms.PictureBox();
             this.label8 = new System.Windows.Forms.Label();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.chkRepeat = new System.Windows.Forms.CheckBox();
             this.radioPad = new System.Windows.Forms.RadioButton();
             this.radioText = new System.Windows.Forms.RadioButton();
             this.ConnStatusLbl = new System.Windows.Forms.Label();
@@ -79,7 +81,6 @@
             this.label2 = new System.Windows.Forms.Label();
             this.InComLbl = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
-            this.PortNumber = new System.Windows.Forms.ComboBox();
             this.groupBox1.SuspendLayout();
             this.PadInPanel.SuspendLayout();
             this.groupBox3.SuspendLayout();
@@ -103,6 +104,7 @@
             this.OutComTxt.Size = new System.Drawing.Size(241, 195);
             this.OutComTxt.TabIndex = 1;
             this.OutComTxt.Text = "";
+            this.OutComTxt.TextChanged += new System.EventHandler(this.OutComTxt_TextChanged);
             // 
             // OutComLbl
             // 
@@ -167,6 +169,14 @@
             this.groupBox1.TabIndex = 7;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "COM Settings";
+            // 
+            // PortNumber
+            // 
+            this.PortNumber.FormattingEnabled = true;
+            this.PortNumber.Location = new System.Drawing.Point(193, 23);
+            this.PortNumber.Name = "PortNumber";
+            this.PortNumber.Size = new System.Drawing.Size(41, 21);
+            this.PortNumber.TabIndex = 8;
             // 
             // textBox2
             // 
@@ -409,6 +419,7 @@
             this.InComTxt.Size = new System.Drawing.Size(431, 383);
             this.InComTxt.TabIndex = 12;
             this.InComTxt.Text = "";
+            this.InComTxt.TextChanged += new System.EventHandler(this.InComTxt_TextChanged);
             // 
             // PadXY_View
             // 
@@ -442,6 +453,7 @@
             // 
             this.groupBox2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBox2.Controls.Add(this.chkRepeat);
             this.groupBox2.Controls.Add(this.radioPad);
             this.groupBox2.Controls.Add(this.radioText);
             this.groupBox2.Controls.Add(this.ConnStatusLbl);
@@ -455,6 +467,18 @@
             this.groupBox2.TabIndex = 11;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Input Settings";
+            // 
+            // chkRepeat
+            // 
+            this.chkRepeat.AutoSize = true;
+            this.chkRepeat.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.chkRepeat.Location = new System.Drawing.Point(124, 14);
+            this.chkRepeat.Name = "chkRepeat";
+            this.chkRepeat.RightToLeft = System.Windows.Forms.RightToLeft.No;
+            this.chkRepeat.Size = new System.Drawing.Size(164, 17);
+            this.chkRepeat.TabIndex = 16;
+            this.chkRepeat.Text = "Don\'t send repeat commands";
+            this.chkRepeat.UseVisualStyleBackColor = true;
             // 
             // radioPad
             // 
@@ -484,7 +508,7 @@
             // ConnStatusLbl
             // 
             this.ConnStatusLbl.AutoSize = true;
-            this.ConnStatusLbl.Location = new System.Drawing.Point(333, 24);
+            this.ConnStatusLbl.Location = new System.Drawing.Point(327, 34);
             this.ConnStatusLbl.Name = "ConnStatusLbl";
             this.ConnStatusLbl.Size = new System.Drawing.Size(92, 13);
             this.ConnStatusLbl.TabIndex = 13;
@@ -494,7 +518,7 @@
             // 
             this.label7.AutoSize = true;
             this.label7.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label7.Location = new System.Drawing.Point(239, 24);
+            this.label7.Location = new System.Drawing.Point(327, 14);
             this.label7.Name = "label7";
             this.label7.Size = new System.Drawing.Size(97, 13);
             this.label7.TabIndex = 12;
@@ -507,7 +531,7 @@
             0,
             0,
             0});
-            this.TimerIntSelect.Location = new System.Drawing.Point(156, 22);
+            this.TimerIntSelect.Location = new System.Drawing.Point(172, 32);
             this.TimerIntSelect.Maximum = new decimal(new int[] {
             1000,
             0,
@@ -521,7 +545,7 @@
             // 
             this.TimerLabel.AutoSize = true;
             this.TimerLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.TimerLabel.Location = new System.Drawing.Point(105, 24);
+            this.TimerLabel.Location = new System.Drawing.Point(121, 34);
             this.TimerLabel.Name = "TimerLabel";
             this.TimerLabel.Size = new System.Drawing.Size(45, 13);
             this.TimerLabel.TabIndex = 10;
@@ -556,14 +580,6 @@
             this.label1.Size = new System.Drawing.Size(15, 13);
             this.label1.TabIndex = 17;
             this.label1.Text = "X";
-            // 
-            // PortNumber
-            // 
-            this.PortNumber.FormattingEnabled = true;
-            this.PortNumber.Location = new System.Drawing.Point(193, 23);
-            this.PortNumber.Name = "PortNumber";
-            this.PortNumber.Size = new System.Drawing.Size(41, 21);
-            this.PortNumber.TabIndex = 8;
             // 
             // Form1
             // 
@@ -639,6 +655,7 @@
         private System.Windows.Forms.Button SaveFileBtn;
         private System.Windows.Forms.Button OpenFileBtn;
         private System.Windows.Forms.ComboBox PortNumber;
+        private System.Windows.Forms.CheckBox chkRepeat;
     }
 }
 

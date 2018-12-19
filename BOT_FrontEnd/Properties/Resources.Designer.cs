@@ -59,5 +59,23 @@ namespace BOT_FrontEnd.Properties {
                 resourceCulture = value;
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot; ?&gt;
+        ///&lt;BotConfig&gt;
+        ///  &lt;StartOfFrame type=&quot;absolute&quot; enable=&quot;true&quot;&gt;G90&lt;/StartOfFrame&gt;
+        ///  &lt;StartOfFrame type=&quot;relative&quot; enable=&quot;true&quot;&gt;G91&lt;/StartOfFrame&gt;
+        ///  &lt;OutputChannels&gt;
+        ///    &lt;Channel param=&quot;X&quot; enable=&quot;true&quot; default=&quot;0.0&quot;&gt;&lt;/Channel&gt;
+        ///    &lt;Channel param=&quot;Y&quot; enable=&quot;true&quot; default=&quot;0.0&quot;&gt;&lt;/Channel&gt;
+        ///    &lt;Channel param=&quot;Z&quot; enable=&quot;true&quot; default=&quot;0.0&quot;&gt;&lt;/Channel&gt;
+        ///    &lt;Channel param=&quot;A&quot; enable=&quot;true&quot; default=&quot;0.0&quot;&gt;&lt;/Channel&gt;
+        ///    &lt;Channel param=&quot;B&quot; enable=&quot;true&quot; default=&quot;0.0&quot;&gt;&lt;/C [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string Config {
+            get {
+                return ResourceManager.GetString("Config", resourceCulture);
+            }
+        }
     }
 }
