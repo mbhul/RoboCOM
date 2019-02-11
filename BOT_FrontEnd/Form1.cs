@@ -20,44 +20,62 @@ namespace BOT_FrontEnd
         const int MAX_CMD_LINES = 10000;
 
         private Controller controller;
+
         private List<Guid> connected_controllers;
         private bool sent_stop;
         private bool PauseTransfer;
         private bool z_persist;
+        private bool z_accumulating;
         private double z_value;
         private string command_prev;
 
         private DirectInput DI;
         private XmlDocument configXML;
+        private Config ctlConfig;
 
         public Form1()
         {
-            //Initialize and set defaults
-            InitializeComponent();
-            bold_font = new Font(InComTxt.Font, FontStyle.Bold);
-            BaudSelect.SelectedIndex = 2;
-            sent_stop = true;
-            PauseTransfer = false;
-            populatePortDropDown();
+            try
+            {
+                //Initialize and set defaults
+                InitializeComponent();
+                bold_font = new Font(InComTxt.Font, FontStyle.Bold);
+                BaudSelect.SelectedIndex = 2;
+                sent_stop = true;
+                PauseTransfer = false;
+                populatePortDropDown();
             
-            ttTimer = new ToolTip();
-            ttTimer.SetToolTip(TimerLabel, "The interval (in milliseconds) between successive lines being written to the COM port.");
-            TimerIntSelect.Value = SendTimer.Interval;
+                ttTimer = new ToolTip();
+                ttTimer.SetToolTip(TimerLabel, "The interval (in milliseconds) between successive lines being written to the COM port.");
+                TimerIntSelect.Value = SendTimer.Interval;
 
-            //Make sure COM port is closed
-            MyVCOM.Close();
-            ConnStatusLbl.Text = "Not Connected";
-            ConnStatusLbl.ForeColor = Color.Red;
+                //Make sure COM port is closed
+                MyVCOM.Close();
+                ConnStatusLbl.Text = "Not Connected";
+                ConnStatusLbl.ForeColor = Color.Red;
 
-            InComTxt_default_position = InComTxt.Top;
-            InComLbl_default_position = InComLbl.Top;
+                InComTxt_default_position = InComTxt.Top;
+                InComLbl_default_position = InComLbl.Top;
 
-            configXML = new XmlDocument();
-            configXML.LoadXml(Properties.Resources.Config);
-            z_persist = Boolean.Parse(configXML.SelectNodes("//Channel[@param='CH1']").Item(0).Attributes["persist"].Value);
-            command_prev = "";
+                configXML = new XmlDocument();
+                configXML.Load("Config.xml");
+                z_persist = Boolean.Parse(configXML.SelectNodes("//Channel[@param='CH1']").Item(0).Attributes["persist"].Value);
+                z_accumulating = Boolean.Parse(configXML.SelectNodes("//Channel[@param='CH1']").Item(0).Attributes["accum"].Value);
+                command_prev = "";
 
-            DI = new DirectInput();
+                ctlConfig = new Config("Config.xml");
+
+                DI = new DirectInput();
+            }
+            catch (FileLoadException e)
+            {
+                //Console.Write(e.StackTrace);
+                using (StreamWriter sw = File.CreateText("err.txt"))
+                {
+                    sw.WriteLine(e.Message);
+                    sw.WriteLine(e.StackTrace);
+                }
+            }
         }
 
         private void Form_Load(object sender, EventArgs e)
@@ -125,6 +143,11 @@ namespace BOT_FrontEnd
             //Get the list of connected controllers (we want to use the gamepad so specify GameControl device type)
             IList<DeviceInstance> ControllerList = DI.GetDevices(DeviceType.Gamepad, DeviceEnumerationFlags.AttachedOnly);
 
+            foreach (DeviceInstance dev in DI.GetDevices(DeviceType.Joystick, DeviceEnumerationFlags.AttachedOnly))
+            {
+                ControllerList.Add(dev);
+            }
+
             if (ControllerList.Count > 0)
             {
                 foreach (DeviceInstance deviceInstance in ControllerList)
@@ -137,7 +160,6 @@ namespace BOT_FrontEnd
             //add the keyboard at the end
             ControllerSelect.Items.Add("Keyboard");
         }
-
 
         /********************************************************************************
          * EVENT HANDLER:   OpenFileBtn_Click
@@ -273,6 +295,7 @@ namespace BOT_FrontEnd
             double x_fs, y_fs, z_fs, a_fs, b_fs;
             double x_def, y_def, z_def, a_def, b_def;
             double z_gain;
+            bool z_centered = true;
 
             //Store configuration values for later use
             z_fs = Double.Parse(configXML.SelectNodes("//Channel[@param='CH1']").Item(0).Attributes["max"].Value) -
@@ -297,6 +320,10 @@ namespace BOT_FrontEnd
             b_def = Double.Parse(configXML.SelectNodes("//Channel[@param='CH5']").Item(0).Attributes["default"].Value);
 
             z_gain = Double.Parse(configXML.SelectNodes("//Channel[@param='CH1']").Item(0).Attributes["gain"].Value);
+
+            //If the Z-input is self-centering then the default value will be somewhere in the middle of the Z full-scale
+            // Otherwise, the Z-input will be near the Z-min. This condition checks if the Z-default is less than 1% of Z full-scale
+            z_centered = !((z_def - Double.Parse(configXML.SelectNodes("//Channel[@param='CH1']").Item(0).Attributes["min"].Value)) < (z_fs * 0.01));
 
             //If the 'Text' send option is checked and there are commands(lines) left to write:
             if (radioText.Checked && instruction_count < instructions.Length)
@@ -388,7 +415,7 @@ namespace BOT_FrontEnd
                     {
                         try
                         {
-                            formatstring = "\r\n" + configXML.SelectNodes("//StopCommand[@ebable='true']").Item(0).InnerXml;
+                            formatstring = "\r\n" + configXML.SelectNodes("//StopCommand[@enable='true']").Item(0).InnerXml;
                             InComTxt.AppendText(formatstring);
                             if (MyVCOM.IsOpen) { MyVCOM.Write(formatstring); }
                         }
@@ -410,21 +437,26 @@ namespace BOT_FrontEnd
                     bool z_condition = false;
 
                     //**** Scale controller values for drawing *****//
-                    x = limitControllerScaleValue(state.Z, 0.0, fs);
-                    y = limitControllerScaleValue(state.RotationZ, 0.0, fs);
+                    x = limitControllerScaleValue(controller.CH2, 0.0, fs);
+                    y = limitControllerScaleValue(controller.CH3, 0.0, fs);
+
                     DrawXY((int)x, (int)y);
 
+                    z = controller.CH1;
                     if (z_persist)
                     {
-                        z = -1 * (state.Y - (fs / 2)) * z_gain;
-                        z += z_value;
-                        z = limitControllerScaleValue(z, 0.0, fs);
-                        z_value = z;
+                        if (z_accumulating)
+                        {
+                            z = -1 * (controller.CH1 - (fs / 2)) * z_gain;
+                            z += z_value;
+                            z = limitControllerScaleValue(z, 0.0, fs);
+                            z_value = z;
+                        }
+                        
                         DrawZ_Persist((int)z);
                     }
                     else
                     {
-                        z = state.Y;
                         DrawZ((int)z);
                     }
 
@@ -437,7 +469,8 @@ namespace BOT_FrontEnd
                     y = -1 * ((float)(y - fs / 2) / fs) * y_fs;
                     y += y_def;
 
-                    if (z_persist)
+                    //Compute Z-value offset based on whether the input is set as self-centering
+                    if (!z_centered)
                     {
                         z = ((float)z / fs) * z_fs;
                     }
@@ -456,7 +489,7 @@ namespace BOT_FrontEnd
                     cmd = "\r\n" + configXML.SelectNodes("//StartOfFrame[@type='relative']").Item(0).InnerXml;
 
                     //**** Convert the values to the configured command scale (in Config.xml) *****//
-                    if (z_persist)
+                    if (!z_centered)
                     {
                         z_condition = (Math.Abs(z) > (z_def + (0.05 * z_fs)) && (z_value != z));
                     }
@@ -507,7 +540,7 @@ namespace BOT_FrontEnd
                     {
                         try
                         {
-                            formatstring = "\r\n" + configXML.SelectNodes("//StopCommand[@ebable='true']").Item(0).InnerXml;
+                            formatstring = "\r\n" + configXML.SelectNodes("//StopCommand[@enable='true']").Item(0).InnerXml;
                             InComTxt.AppendText(formatstring);
                             if (MyVCOM.IsOpen) { MyVCOM.Write(formatstring); }
                         }
@@ -600,6 +633,7 @@ namespace BOT_FrontEnd
                 ControllerSelect.SelectedIndex = 0;
                 PadXY_View.Visible = true;
                 PadZ_View.Visible = true;
+                btnCtlSettings.Enabled = true;
 
                 InComTxt.Height = InComTxt.Bottom - OutComTxt.Top;
                 InComTxt.Top = OutComTxt.Top;
@@ -616,17 +650,13 @@ namespace BOT_FrontEnd
                     //MessageBox.Show("No Controller Found!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                     //radioText.PerformClick();
                 }
-
-                SendTimer.Interval = (int)TimerIntSelect.Value;
-                SendTimer.Enabled = true;
-                SendTimer.Start();
-
             }
             else
             {
                 PadInPanel.SendToBack();
                 PadXY_View.Visible = false;
                 PadZ_View.Visible = false;
+                btnCtlSettings.Enabled = false;
 
                 InComTxt.Height = InComTxt.Bottom - InComTxt_default_position;
                 InComTxt.Top = InComTxt_default_position;
@@ -643,7 +673,17 @@ namespace BOT_FrontEnd
          ********************************************************************************/
         private void ControllerSelect_SelectedIndexChanged(object sender, EventArgs e)
         {
-
+            if ((String)ControllerSelect.SelectedItem == "Keyboard")
+            {
+                ctlConfig.GetDefaultConfig();
+                btnCtlSettings.Enabled = false;
+            }
+            else
+            {
+                ctlConfig.GetConfig(connected_controllers[ControllerSelect.SelectedIndex]);
+                controller.SetCurrent(connected_controllers[ControllerSelect.SelectedIndex]);
+                btnCtlSettings.Enabled = true;
+            }
         }
 
         /********************************************************************************
@@ -655,6 +695,10 @@ namespace BOT_FrontEnd
         {
             controller.SetCurrent(connected_controllers[ControllerSelect.SelectedIndex]);
             ControllerPoller.RunWorkerAsync();
+
+            SendTimer.Interval = (int)TimerIntSelect.Value;
+            SendTimer.Enabled = true;
+            SendTimer.Start();
 
             System.Threading.Thread.Sleep(50);
         }
@@ -679,7 +723,7 @@ namespace BOT_FrontEnd
         private void DrawZ(long position)
         {
             Bitmap bitmap = new Bitmap(PadZ_View.Width, PadZ_View.Height);
-            float position_center = PadZ_View.Height * ((float)position / (float)controller.getFS());
+            float position_center = PadZ_View.Height * (1 - ((float)position / (float)controller.getFS()));
 
             for (int i = -5; i < 5; i++)
             {
@@ -823,7 +867,21 @@ namespace BOT_FrontEnd
                 OutComTxt.Select(0, OutComTxt.GetFirstCharIndexFromLine(1));
                 OutComTxt.SelectedText = "";
             }
-        } 
-        
+        }
+
+        private void btnCtlSettings_Click(object sender, EventArgs e)
+        {
+            ConfigForm configPanel = new ConfigForm(ref this.controller);
+            StopControllerInput();
+
+            var result = configPanel.ShowDialog();
+            if(result == System.Windows.Forms.DialogResult.OK)
+            {
+                controller.SetChannelMapping(configPanel.ChannelMapping, configPanel.ChannelInverted);
+            }
+
+            StartControllerInput();
+        }
+
     }
 }

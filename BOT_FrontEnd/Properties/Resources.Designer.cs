@@ -22,7 +22,7 @@ namespace BOT_FrontEnd.Properties {
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    internal class Resources {
+    public class Resources {
         
         private static global::System.Resources.ResourceManager resourceMan;
         
@@ -36,7 +36,7 @@ namespace BOT_FrontEnd.Properties {
         ///   Returns the cached ResourceManager instance used by this class.
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        internal static global::System.Resources.ResourceManager ResourceManager {
+        public static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
                     global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("BOT_FrontEnd.Properties.Resources", typeof(Resources).Assembly);
@@ -51,7 +51,7 @@ namespace BOT_FrontEnd.Properties {
         ///   resource lookups using this strongly typed resource class.
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        internal static global::System.Globalization.CultureInfo Culture {
+        public static global::System.Globalization.CultureInfo Culture {
             get {
                 return resourceCulture;
             }
@@ -66,13 +66,11 @@ namespace BOT_FrontEnd.Properties {
         ///  &lt;StartOfFrame type=&quot;absolute&quot; enable=&quot;true&quot;&gt;G90&lt;/StartOfFrame&gt;
         ///  &lt;StartOfFrame type=&quot;relative&quot; enable=&quot;true&quot;&gt;G91&lt;/StartOfFrame&gt;
         ///  &lt;OutputChannels&gt;
-        ///    &lt;Channel param=&quot;X&quot; enable=&quot;true&quot; default=&quot;0.0&quot;&gt;&lt;/Channel&gt;
-        ///    &lt;Channel param=&quot;Y&quot; enable=&quot;true&quot; default=&quot;0.0&quot;&gt;&lt;/Channel&gt;
-        ///    &lt;Channel param=&quot;Z&quot; enable=&quot;true&quot; default=&quot;0.0&quot;&gt;&lt;/Channel&gt;
-        ///    &lt;Channel param=&quot;A&quot; enable=&quot;true&quot; default=&quot;0.0&quot;&gt;&lt;/Channel&gt;
-        ///    &lt;Channel param=&quot;B&quot; enable=&quot;true&quot; default=&quot;0.0&quot;&gt;&lt;/C [rest of string was truncated]&quot;;.
+        ///    &lt;Channel param=&quot;CH1&quot; enable=&quot;true&quot; default=&quot;0.0&quot; precision=&quot;00.00&quot; min=&quot;-10&quot; max=&quot;10&quot; persist=&quot;false&quot; gain=&quot;0.1&quot;&gt;Z&lt;/Channel&gt;
+        ///    &lt;Channel param=&quot;CH2&quot; enable=&quot;true&quot; default=&quot;0.0&quot; precision=&quot;00.00&quot; min=&quot;-10&quot; max=&quot;10&quot; gain=&quot;0.025&quot;&gt;X&lt;/Channel&gt;
+        ///    &lt;Channel param=&quot;CH3&quot; enable=&quot;true&quot; default=&quot;0.0&quot; precisi [rest of string was truncated]&quot;;.
         /// </summary>
-        internal static string Config {
+        public static string Config {
             get {
                 return ResourceManager.GetString("Config", resourceCulture);
             }

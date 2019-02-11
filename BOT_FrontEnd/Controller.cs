@@ -7,7 +7,7 @@ using SlimDX.DirectInput;
 namespace BOT_FrontEnd
 {
     //Wrapping class for a DirectX input device (ie. gamepad)
-    class Controller
+    public class Controller
     {
         private DirectInput directInput;
 
@@ -19,12 +19,19 @@ namespace BOT_FrontEnd
         private long full_scale;            //size of joystick axes
         public string Name { get; private set; }
 
+        private int[] CHANNEL;
+        public ControllerProperty[] ChannelMapping { get; private set; }
+        public bool[] ChannelInverted { get; private set; }
+
         public Controller(IntPtr Owner)
         {
             hWnd = Owner;
             currentDevice = null;
             Name = "NA";
             full_scale = 100;
+            ChannelMapping = null;
+
+            CHANNEL = new int[(int)ChannelNumber.NUM_CHANNELS];
 
             directInput = new DirectInput();
         }
@@ -37,6 +44,8 @@ namespace BOT_FrontEnd
          ********************************************************************************/
         public void SetCurrent(Guid device_guid)
         {
+            DeviceInstance di;
+
             if (device_guid == deviceGuid) { return; }
             if (currentDevice != null) 
             {
@@ -52,8 +61,20 @@ namespace BOT_FrontEnd
             currentDevice.Acquire();
 
             devCaps = currentDevice.Capabilities;
-            Poll();
+
+            this.Poll();
             full_scale = 2 * deviceState.X;
+
+            di = getCurrentDeviceInstance();
+            if (di.Type == DeviceType.Joystick)
+            {
+                ChannelMapping = Helpers.DefaultJoystick;
+            }
+            else
+            {
+                ChannelMapping = Helpers.DefaultGamepad;
+            }
+            ChannelInverted = Enumerable.Repeat<bool>(false, (int)ChannelNumber.NUM_CHANNELS).ToArray();
         }
 
         /********************************************************************************
@@ -65,6 +86,67 @@ namespace BOT_FrontEnd
         {
             currentDevice.Poll();
             deviceState = currentDevice.GetCurrentState();
+
+            if(ChannelMapping != null)
+            {
+                for(int i = 0; i < (int)ChannelNumber.NUM_CHANNELS; i++)
+                {
+                    switch(ChannelMapping[i])
+                    {
+                        case ControllerProperty.X:
+                            CHANNEL[i] = deviceState.X;
+                            break;
+                        case ControllerProperty.Y:
+                            CHANNEL[i] = deviceState.Y;
+                            break;
+                        case ControllerProperty.Z:
+                            CHANNEL[i] = deviceState.Z;
+                            break;
+                        case ControllerProperty.RotationX:
+                            CHANNEL[i] = deviceState.RotationX;
+                            break;
+                        case ControllerProperty.RotationY:
+                            CHANNEL[i] = deviceState.RotationY;
+                            break;
+                        case ControllerProperty.RotationZ:
+                            CHANNEL[i] = deviceState.RotationZ;
+                            break;
+                        default:
+                            break;
+                    }
+
+                    if(ChannelInverted[i])
+                    {
+                        CHANNEL[i] = (int)full_scale - CHANNEL[i];
+                    }
+                }
+            }
+        }
+
+        //Public GET properties
+        public int CH1
+        {
+            get { return CHANNEL[0]; }
+        }
+
+        public int CH2
+        {
+            get { return CHANNEL[1]; }
+        }
+
+        public int CH3
+        {
+            get { return CHANNEL[2]; }
+        }
+
+        public int CH4
+        {
+            get { return CHANNEL[3]; }
+        }
+
+        public int CH5
+        {
+            get { return CHANNEL[4]; }
         }
 
         /********************************************************************************
@@ -86,5 +168,29 @@ namespace BOT_FrontEnd
         {
             return full_scale;
         }
+
+        public DeviceInstance getCurrentDeviceInstance()
+        {
+            DeviceInstance curDevice = null;
+            IList<DeviceInstance> ControllerList = directInput.GetDevices();
+
+            foreach(DeviceInstance di in ControllerList)
+            {
+                if(di.InstanceGuid == this.deviceGuid)
+                {
+                    curDevice = di;
+                    break;
+                }
+            }
+
+            return curDevice;
+        }
+
+        public void SetChannelMapping(ControllerProperty[] map, bool[] inversion)
+        {
+            ChannelMapping = map;
+            ChannelInverted = inversion;
+        }
+        
     }
 }

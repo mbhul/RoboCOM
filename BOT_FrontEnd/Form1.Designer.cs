@@ -81,6 +81,7 @@
             this.label2 = new System.Windows.Forms.Label();
             this.InComLbl = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
+            this.btnCtlSettings = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.PadInPanel.SuspendLayout();
             this.groupBox3.SuspendLayout();
@@ -304,6 +305,7 @@
             // 
             // groupBox3
             // 
+            this.groupBox3.Controls.Add(this.btnCtlSettings);
             this.groupBox3.Controls.Add(this.ControllerSelect);
             this.groupBox3.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBox3.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
@@ -318,7 +320,7 @@
             // 
             this.ControllerSelect.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.ControllerSelect.FormattingEnabled = true;
-            this.ControllerSelect.Location = new System.Drawing.Point(12, 23);
+            this.ControllerSelect.Location = new System.Drawing.Point(12, 14);
             this.ControllerSelect.Name = "ControllerSelect";
             this.ControllerSelect.Size = new System.Drawing.Size(226, 21);
             this.ControllerSelect.TabIndex = 0;
@@ -342,14 +344,14 @@
             // 
             // panel2
             // 
-            this.panel2.Controls.Add(this.TextInPanel);
-            this.panel2.Controls.Add(this.PadInPanel);
             this.panel2.Controls.Add(this.ClearOutBtn);
             this.panel2.Controls.Add(this.groupBox1);
             this.panel2.Controls.Add(this.OutComLbl);
             this.panel2.Controls.Add(this.SendBtn);
             this.panel2.Controls.Add(this.OutComTxt);
             this.panel2.Controls.Add(this.ConnReset);
+            this.panel2.Controls.Add(this.TextInPanel);
+            this.panel2.Controls.Add(this.PadInPanel);
             this.panel2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel2.Location = new System.Drawing.Point(3, 3);
             this.panel2.Name = "panel2";
@@ -581,6 +583,18 @@
             this.label1.TabIndex = 17;
             this.label1.Text = "X";
             // 
+            // btnCtlSettings
+            // 
+            this.btnCtlSettings.Enabled = false;
+            this.btnCtlSettings.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnCtlSettings.Location = new System.Drawing.Point(11, 36);
+            this.btnCtlSettings.Name = "btnCtlSettings";
+            this.btnCtlSettings.Size = new System.Drawing.Size(227, 22);
+            this.btnCtlSettings.TabIndex = 1;
+            this.btnCtlSettings.Text = "Controller Settings";
+            this.btnCtlSettings.UseVisualStyleBackColor = true;
+            this.btnCtlSettings.Click += new System.EventHandler(this.btnCtlSettings_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -656,6 +670,7 @@
         private System.Windows.Forms.Button OpenFileBtn;
         private System.Windows.Forms.ComboBox PortNumber;
         private System.Windows.Forms.CheckBox chkRepeat;
+        private System.Windows.Forms.Button btnCtlSettings;
     }
 }
 
