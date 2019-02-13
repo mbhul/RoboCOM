@@ -58,6 +58,7 @@
             this.ClearOutBtn = new System.Windows.Forms.Button();
             this.PadInPanel = new System.Windows.Forms.Panel();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
+            this.btnCtlSettings = new System.Windows.Forms.Button();
             this.ControllerSelect = new System.Windows.Forms.ComboBox();
             this.ControllerPoller = new System.ComponentModel.BackgroundWorker();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
@@ -81,7 +82,6 @@
             this.label2 = new System.Windows.Forms.Label();
             this.InComLbl = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
-            this.btnCtlSettings = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.PadInPanel.SuspendLayout();
             this.groupBox3.SuspendLayout();
@@ -316,6 +316,18 @@
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "Controller";
             // 
+            // btnCtlSettings
+            // 
+            this.btnCtlSettings.Enabled = false;
+            this.btnCtlSettings.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnCtlSettings.Location = new System.Drawing.Point(11, 36);
+            this.btnCtlSettings.Name = "btnCtlSettings";
+            this.btnCtlSettings.Size = new System.Drawing.Size(227, 22);
+            this.btnCtlSettings.TabIndex = 1;
+            this.btnCtlSettings.Text = "Controller Settings";
+            this.btnCtlSettings.UseVisualStyleBackColor = true;
+            this.btnCtlSettings.Click += new System.EventHandler(this.btnCtlSettings_Click);
+            // 
             // ControllerSelect
             // 
             this.ControllerSelect.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
@@ -473,6 +485,8 @@
             // chkRepeat
             // 
             this.chkRepeat.AutoSize = true;
+            this.chkRepeat.Checked = true;
+            this.chkRepeat.CheckState = System.Windows.Forms.CheckState.Checked;
             this.chkRepeat.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.chkRepeat.Location = new System.Drawing.Point(124, 14);
             this.chkRepeat.Name = "chkRepeat";
@@ -582,18 +596,6 @@
             this.label1.Size = new System.Drawing.Size(15, 13);
             this.label1.TabIndex = 17;
             this.label1.Text = "X";
-            // 
-            // btnCtlSettings
-            // 
-            this.btnCtlSettings.Enabled = false;
-            this.btnCtlSettings.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnCtlSettings.Location = new System.Drawing.Point(11, 36);
-            this.btnCtlSettings.Name = "btnCtlSettings";
-            this.btnCtlSettings.Size = new System.Drawing.Size(227, 22);
-            this.btnCtlSettings.TabIndex = 1;
-            this.btnCtlSettings.Text = "Controller Settings";
-            this.btnCtlSettings.UseVisualStyleBackColor = true;
-            this.btnCtlSettings.Click += new System.EventHandler(this.btnCtlSettings_Click);
             // 
             // Form1
             // 

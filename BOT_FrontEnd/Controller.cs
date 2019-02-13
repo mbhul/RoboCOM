@@ -12,12 +12,12 @@ namespace BOT_FrontEnd
         private DirectInput directInput;
 
         private Joystick currentDevice;     //current device
-        private Guid deviceGuid;            //GUID of the current device
         private JoystickState deviceState;  //joystickstate of the gamepad
         private IntPtr hWnd;                //handle to the parent of this device instance (ie. the main program window)
         private Capabilities devCaps;       //device capabilities 
         private long full_scale;            //size of joystick axes
         public string Name { get; private set; }
+        public Guid DeviceGuid { get; private set; }
 
         private int[] CHANNEL;
         public ControllerProperty[] ChannelMapping { get; private set; }
@@ -46,7 +46,7 @@ namespace BOT_FrontEnd
         {
             DeviceInstance di;
 
-            if (device_guid == deviceGuid) { return; }
+            if (device_guid == DeviceGuid) { return; }
             if (currentDevice != null) 
             {
                 currentDevice.Unacquire();
@@ -55,7 +55,7 @@ namespace BOT_FrontEnd
 
             currentDevice = new Joystick(directInput, device_guid);
             Name = currentDevice.Properties.InstanceName;
-            deviceGuid = device_guid;
+            DeviceGuid = device_guid;
 
             currentDevice.SetCooperativeLevel(hWnd, CooperativeLevel.Background | CooperativeLevel.Nonexclusive);
             currentDevice.Acquire();
@@ -176,7 +176,7 @@ namespace BOT_FrontEnd
 
             foreach(DeviceInstance di in ControllerList)
             {
-                if(di.InstanceGuid == this.deviceGuid)
+                if(di.InstanceGuid == this.DeviceGuid)
                 {
                     curDevice = di;
                     break;

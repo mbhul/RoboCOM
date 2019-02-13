@@ -24,13 +24,10 @@ namespace BOT_FrontEnd
         private List<Guid> connected_controllers;
         private bool sent_stop;
         private bool PauseTransfer;
-        private bool z_persist;
-        private bool z_accumulating;
         private double z_value;
         private string command_prev;
 
         private DirectInput DI;
-        private XmlDocument configXML;
         private Config ctlConfig;
 
         public Form1()
@@ -57,13 +54,8 @@ namespace BOT_FrontEnd
                 InComTxt_default_position = InComTxt.Top;
                 InComLbl_default_position = InComLbl.Top;
 
-                configXML = new XmlDocument();
-                configXML.Load("Config.xml");
-                z_persist = Boolean.Parse(configXML.SelectNodes("//Channel[@param='CH1']").Item(0).Attributes["persist"].Value);
-                z_accumulating = Boolean.Parse(configXML.SelectNodes("//Channel[@param='CH1']").Item(0).Attributes["accum"].Value);
-                command_prev = "";
-
                 ctlConfig = new Config("Config.xml");
+                command_prev = "";
 
                 DI = new DirectInput();
             }
@@ -298,32 +290,32 @@ namespace BOT_FrontEnd
             bool z_centered = true;
 
             //Store configuration values for later use
-            z_fs = Double.Parse(configXML.SelectNodes("//Channel[@param='CH1']").Item(0).Attributes["max"].Value) -
-                Double.Parse(configXML.SelectNodes("//Channel[@param='CH1']").Item(0).Attributes["min"].Value);
+            z_fs = (double)ctlConfig.channel_config[(int)ChannelNumber.CH1].MAX -
+                    (double)ctlConfig.channel_config[(int)ChannelNumber.CH1].MIN;
 
-            x_fs = Double.Parse(configXML.SelectNodes("//Channel[@param='CH2']").Item(0).Attributes["max"].Value) -
-                        Double.Parse(configXML.SelectNodes("//Channel[@param='CH2']").Item(0).Attributes["min"].Value);
+            x_fs = (double)ctlConfig.channel_config[(int)ChannelNumber.CH2].MAX -
+                    (double)ctlConfig.channel_config[(int)ChannelNumber.CH2].MIN;
 
-            y_fs = Double.Parse(configXML.SelectNodes("//Channel[@param='CH3']").Item(0).Attributes["max"].Value) -
-                Double.Parse(configXML.SelectNodes("//Channel[@param='CH3']").Item(0).Attributes["min"].Value);
+            y_fs = (double)ctlConfig.channel_config[(int)ChannelNumber.CH3].MAX -
+                    (double)ctlConfig.channel_config[(int)ChannelNumber.CH3].MIN;
 
-            a_fs = Double.Parse(configXML.SelectNodes("//Channel[@param='CH4']").Item(0).Attributes["max"].Value) -
-                Double.Parse(configXML.SelectNodes("//Channel[@param='CH4']").Item(0).Attributes["min"].Value);
+            a_fs = (double)ctlConfig.channel_config[(int)ChannelNumber.CH4].MAX -
+                    (double)ctlConfig.channel_config[(int)ChannelNumber.CH4].MIN;
 
-            b_fs = Double.Parse(configXML.SelectNodes("//Channel[@param='CH5']").Item(0).Attributes["max"].Value) -
-                Double.Parse(configXML.SelectNodes("//Channel[@param='CH5']").Item(0).Attributes["min"].Value);
+            b_fs = (double)ctlConfig.channel_config[(int)ChannelNumber.CH5].MAX -
+                    (double)ctlConfig.channel_config[(int)ChannelNumber.CH5].MIN;
 
-            z_def = Double.Parse(configXML.SelectNodes("//Channel[@param='CH1']").Item(0).Attributes["default"].Value);
-            x_def = Double.Parse(configXML.SelectNodes("//Channel[@param='CH2']").Item(0).Attributes["default"].Value);
-            y_def = Double.Parse(configXML.SelectNodes("//Channel[@param='CH3']").Item(0).Attributes["default"].Value);
-            a_def = Double.Parse(configXML.SelectNodes("//Channel[@param='CH4']").Item(0).Attributes["default"].Value);
-            b_def = Double.Parse(configXML.SelectNodes("//Channel[@param='CH5']").Item(0).Attributes["default"].Value);
+            z_def = (double)ctlConfig.channel_config[(int)ChannelNumber.CH1].CENTER;
+            x_def = (double)ctlConfig.channel_config[(int)ChannelNumber.CH2].CENTER;
+            y_def = (double)ctlConfig.channel_config[(int)ChannelNumber.CH3].CENTER;
+            a_def = (double)ctlConfig.channel_config[(int)ChannelNumber.CH4].CENTER;
+            b_def = (double)ctlConfig.channel_config[(int)ChannelNumber.CH5].CENTER;
 
-            z_gain = Double.Parse(configXML.SelectNodes("//Channel[@param='CH1']").Item(0).Attributes["gain"].Value);
+            z_gain = ctlConfig.channelGain[(int)ChannelNumber.CH1];
 
             //If the Z-input is self-centering then the default value will be somewhere in the middle of the Z full-scale
             // Otherwise, the Z-input will be near the Z-min. This condition checks if the Z-default is less than 1% of Z full-scale
-            z_centered = !((z_def - Double.Parse(configXML.SelectNodes("//Channel[@param='CH1']").Item(0).Attributes["min"].Value)) < (z_fs * 0.01));
+            z_centered = !((z_def - ctlConfig.channel_config[(int)ChannelNumber.CH1].MIN) < (z_fs * 0.01));
 
             //If the 'Text' send option is checked and there are commands(lines) left to write:
             if (radioText.Checked && instruction_count < instructions.Length)
@@ -366,7 +358,7 @@ namespace BOT_FrontEnd
                     y = (y + 1) * key_increment;
                     z *= key_increment;
 
-                    if(z_persist)
+                    if (ctlConfig.z_persist)
                     {
                         z += z_value;
                         z_value = z;
@@ -386,17 +378,17 @@ namespace BOT_FrontEnd
                     z += z_def;
 
                     //**** Build the output command format string *****//
-                    formatstring = "\r\n" + configXML.SelectNodes("//StartOfFrame[@type='relative']").Item(0).InnerXml;
-                    formatstring += configXML.SelectNodes("//Channel[@param='CH1']").Item(0).InnerXml + "{0:";
-                    formatstring += configXML.SelectNodes("//Channel[@param='CH1']").Item(0).Attributes["precision"].Value + "}";
-                    formatstring += configXML.SelectNodes("//ChannelSeparator").Item(0).InnerXml;
+                    formatstring = "\r\n" + ctlConfig.cmdPrefixRelative;
+                    formatstring += ctlConfig.channelPrefix[(int)ChannelNumber.CH1] + "{0:";
+                    formatstring += ctlConfig.precisionFormat[(int)ChannelNumber.CH1] + "}";
+                    formatstring += ctlConfig.chanSeparator;
 
-                    formatstring += configXML.SelectNodes("//Channel[@param='CH2']").Item(0).InnerXml + "{1:";
-                    formatstring += configXML.SelectNodes("//Channel[@param='CH2']").Item(0).Attributes["precision"].Value + "}";
-                    formatstring += configXML.SelectNodes("//ChannelSeparator").Item(0).InnerXml;
+                    formatstring += ctlConfig.channelPrefix[(int)ChannelNumber.CH2] + "{1:";
+                    formatstring += ctlConfig.precisionFormat[(int)ChannelNumber.CH2] + "}";
+                    formatstring += ctlConfig.chanSeparator;
 
-                    formatstring += configXML.SelectNodes("//Channel[@param='CH3']").Item(0).InnerXml + "{2:";
-                    formatstring += configXML.SelectNodes("//Channel[@param='CH3']").Item(0).Attributes["precision"].Value + "}";
+                    formatstring += ctlConfig.channelPrefix[(int)ChannelNumber.CH3] + "{2:";
+                    formatstring += ctlConfig.precisionFormat[(int)ChannelNumber.CH3] + "}";
                     formatstring += ";";
 
                     cmd = String.Format(formatstring, z, x, y);
@@ -415,7 +407,7 @@ namespace BOT_FrontEnd
                     {
                         try
                         {
-                            formatstring = "\r\n" + configXML.SelectNodes("//StopCommand[@enable='true']").Item(0).InnerXml;
+                            formatstring = "\r\n" + ctlConfig.stopCommand;
                             InComTxt.AppendText(formatstring);
                             if (MyVCOM.IsOpen) { MyVCOM.Write(formatstring); }
                         }
@@ -443,9 +435,9 @@ namespace BOT_FrontEnd
                     DrawXY((int)x, (int)y);
 
                     z = controller.CH1;
-                    if (z_persist)
+                    if (ctlConfig.z_persist)
                     {
-                        if (z_accumulating)
+                        if (ctlConfig.z_accumulating)
                         {
                             z = -1 * (controller.CH1 - (fs / 2)) * z_gain;
                             z += z_value;
@@ -486,7 +478,7 @@ namespace BOT_FrontEnd
                     b = (angle_A_B == -1) ? 0 : 0.1 * Math.Sin(angle_A_B);
                     b += b_def;
 
-                    cmd = "\r\n" + configXML.SelectNodes("//StartOfFrame[@type='relative']").Item(0).InnerXml;
+                    cmd = "\r\n" + ctlConfig.cmdPrefixRelative;
 
                     //**** Convert the values to the configured command scale (in Config.xml) *****//
                     if (!z_centered)
@@ -498,28 +490,28 @@ namespace BOT_FrontEnd
                         z_condition = (Math.Abs(z - z_def) > (0.05 * z_fs) && (z_value != z));
                     }
 
-                    formatstring = configXML.SelectNodes("//Channel[@param='CH1']").Item(0).InnerXml + "{0:";
-                    formatstring += configXML.SelectNodes("//Channel[@param='CH1']").Item(0).Attributes["precision"].Value + "}";
-                    formatstring += configXML.SelectNodes("//ChannelSeparator").Item(0).InnerXml;
+                    formatstring = ctlConfig.channelPrefix[(int)ChannelNumber.CH1] + "{0:";
+                    formatstring += ctlConfig.precisionFormat[(int)ChannelNumber.CH1] + "}";
+                    formatstring += ctlConfig.chanSeparator;
                     cmd = String.Format(cmd + formatstring, z);
 
-                    formatstring = configXML.SelectNodes("//Channel[@param='CH2']").Item(0).InnerXml + "{0:";
-                    formatstring += configXML.SelectNodes("//Channel[@param='CH2']").Item(0).Attributes["precision"].Value + "}";
-                    formatstring += configXML.SelectNodes("//ChannelSeparator").Item(0).InnerXml;
+                    formatstring = ctlConfig.channelPrefix[(int)ChannelNumber.CH2] + "{0:";
+                    formatstring += ctlConfig.precisionFormat[(int)ChannelNumber.CH2] + "}";
+                    formatstring += ctlConfig.chanSeparator;
                     cmd = String.Format(cmd + formatstring, x);
 
-                    formatstring = configXML.SelectNodes("//Channel[@param='CH3']").Item(0).InnerXml + "{0:";
-                    formatstring += configXML.SelectNodes("//Channel[@param='CH3']").Item(0).Attributes["precision"].Value + "}";
-                    formatstring += configXML.SelectNodes("//ChannelSeparator").Item(0).InnerXml;
+                    formatstring = ctlConfig.channelPrefix[(int)ChannelNumber.CH3] + "{0:";
+                    formatstring += ctlConfig.precisionFormat[(int)ChannelNumber.CH3] + "}";
+                    formatstring += ctlConfig.chanSeparator;
                     cmd = String.Format(cmd + formatstring, y);
 
-                    formatstring = configXML.SelectNodes("//Channel[@param='CH4']").Item(0).InnerXml + "{0:";
-                    formatstring += configXML.SelectNodes("//Channel[@param='CH4']").Item(0).Attributes["precision"].Value + "}";
-                    formatstring += configXML.SelectNodes("//ChannelSeparator").Item(0).InnerXml;
+                    formatstring = ctlConfig.channelPrefix[(int)ChannelNumber.CH4] + "{0:";
+                    formatstring += ctlConfig.precisionFormat[(int)ChannelNumber.CH4] + "}";
+                    formatstring += ctlConfig.chanSeparator;
                     cmd = String.Format(cmd + formatstring, a);
 
-                    formatstring = configXML.SelectNodes("//Channel[@param='CH5']").Item(0).InnerXml + "{0:";
-                    formatstring += configXML.SelectNodes("//Channel[@param='CH5']").Item(0).Attributes["precision"].Value + "}";
+                    formatstring = ctlConfig.channelPrefix[(int)ChannelNumber.CH5] + "{0:";
+                    formatstring += ctlConfig.precisionFormat[(int)ChannelNumber.CH5] + "}";
                     cmd = String.Format(cmd + formatstring, b); 
 
                     cmd += ";";
@@ -540,7 +532,7 @@ namespace BOT_FrontEnd
                     {
                         try
                         {
-                            formatstring = "\r\n" + configXML.SelectNodes("//StopCommand[@enable='true']").Item(0).InnerXml;
+                            formatstring = "\r\n" + ctlConfig.stopCommand;
                             InComTxt.AppendText(formatstring);
                             if (MyVCOM.IsOpen) { MyVCOM.Write(formatstring); }
                         }
@@ -682,6 +674,7 @@ namespace BOT_FrontEnd
             {
                 ctlConfig.GetConfig(connected_controllers[ControllerSelect.SelectedIndex]);
                 controller.SetCurrent(connected_controllers[ControllerSelect.SelectedIndex]);
+                controller.SetChannelMapping(ctlConfig.inputMapping, ctlConfig.inputInverted);
                 btnCtlSettings.Enabled = true;
             }
         }
@@ -871,13 +864,15 @@ namespace BOT_FrontEnd
 
         private void btnCtlSettings_Click(object sender, EventArgs e)
         {
-            ConfigForm configPanel = new ConfigForm(ref this.controller);
+            ConfigForm configPanel = new ConfigForm(ref this.controller, ref this.ctlConfig);
             StopControllerInput();
 
             var result = configPanel.ShowDialog();
             if(result == System.Windows.Forms.DialogResult.OK)
             {
                 controller.SetChannelMapping(configPanel.ChannelMapping, configPanel.ChannelInverted);
+                ctlConfig = configPanel.activeConfig;
+                ctlConfig.SaveToFile("Config.xml", controller);
             }
 
             StartControllerInput();

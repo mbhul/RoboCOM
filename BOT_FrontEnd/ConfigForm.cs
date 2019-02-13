@@ -14,6 +14,7 @@ namespace BOT_FrontEnd
     {
         public ControllerProperty[] ChannelMapping {get; private set;}
         public bool[] ChannelInverted { get; private set; }
+        public Config activeConfig { get; private set; }
         
         private int prev_x;
         private int prev_y;
@@ -29,22 +30,58 @@ namespace BOT_FrontEnd
         private bool inputSelected = false;
         private bool inputInverted = false;
 
-        public ConfigForm(ref Controller ctl)
+        public ConfigForm(ref Controller ctl, ref Config cfg)
         {
             DeviceInstance di = ctl.getCurrentDeviceInstance();
             
             InitializeComponent();
             activeController = ctl;
+            activeConfig = cfg;
             activeController.Poll();
             full_scale = activeController.getFS();
 
             ChannelMapping = activeController.ChannelMapping;
             ChannelInverted = activeController.ChannelInverted;
             UpdateInputLabels();
+            setDefaultSetupValues();
 
             ControllerPoller.WorkerSupportsCancellation = true;
             ControllerPoller.DoWork += new DoWorkEventHandler(ControllerPoller_DoWork);
             ControllerPoller.RunWorkerCompleted += new RunWorkerCompletedEventHandler(ControllerPoller_RunWorkerCompleted);
+        }
+
+        /********************************************************************************
+         * FUNCTION:        setDefaultSetupValues
+         * Description:     Populate the text boxes with their initial values
+         * Parameters:      N/A
+         ********************************************************************************/
+        private void setDefaultSetupValues()
+        {
+            if(activeConfig != null)
+            {
+                txt1_min.Text = activeConfig.channel_config[(int)ChannelNumber.CH1].MIN.ToString();
+                txt1_max.Text = activeConfig.channel_config[(int)ChannelNumber.CH1].MAX.ToString();
+                txt1_center.Text = activeConfig.channel_config[(int)ChannelNumber.CH1].CENTER.ToString();
+
+                txt2_min.Text = activeConfig.channel_config[(int)ChannelNumber.CH2].MIN.ToString();
+                txt2_max.Text = activeConfig.channel_config[(int)ChannelNumber.CH2].MAX.ToString();
+                txt2_center.Text = activeConfig.channel_config[(int)ChannelNumber.CH2].CENTER.ToString();
+
+                txt3_min.Text = activeConfig.channel_config[(int)ChannelNumber.CH3].MIN.ToString();
+                txt3_max.Text = activeConfig.channel_config[(int)ChannelNumber.CH3].MAX.ToString();
+                txt3_center.Text = activeConfig.channel_config[(int)ChannelNumber.CH3].CENTER.ToString();
+
+                txt4_min.Text = activeConfig.channel_config[(int)ChannelNumber.CH4].MIN.ToString();
+                txt4_max.Text = activeConfig.channel_config[(int)ChannelNumber.CH4].MAX.ToString();
+                txt4_center.Text = activeConfig.channel_config[(int)ChannelNumber.CH4].CENTER.ToString();
+
+                txt5_min.Text = activeConfig.channel_config[(int)ChannelNumber.CH5].MIN.ToString();
+                txt5_max.Text = activeConfig.channel_config[(int)ChannelNumber.CH5].MAX.ToString();
+                txt5_center.Text = activeConfig.channel_config[(int)ChannelNumber.CH5].CENTER.ToString();
+
+                chkPersist.Checked = activeConfig.z_persist;
+                chkAccum.Checked = activeConfig.z_accumulating;
+            }
         }
 
         /********************************************************************************
@@ -360,8 +397,32 @@ namespace BOT_FrontEnd
             }
         }
 
+        private void UpdateConfig()
+        {
+            Control[,] configTxtBoxes = 
+            {
+                {txt1_min, txt1_max, txt1_center},
+                {txt2_min, txt2_max, txt2_center},
+                {txt3_min, txt3_max, txt3_center},
+                {txt4_min, txt4_max, txt4_center},
+                {txt5_min, txt5_max, txt5_center}
+            };
+            ChannelConfigValues[] configValues = new ChannelConfigValues[(int)ChannelNumber.NUM_CHANNELS];
+
+            for(int i = 0; i < (int)ChannelNumber.NUM_CHANNELS; i++)
+            {
+                configValues[i] = new ChannelConfigValues();
+                configValues[i].MIN = double.Parse(configTxtBoxes[i,0].Text);
+                configValues[i].MAX = double.Parse(configTxtBoxes[i, 1].Text);
+                configValues[i].CENTER = double.Parse(configTxtBoxes[i, 2].Text);
+            }
+
+            activeConfig.SetConfigParams(configValues, chkPersist.Checked, chkAccum.Checked);
+        }
+
         private void button1_Click(object sender, EventArgs e)
         {
+            UpdateConfig();
             this.DialogResult = DialogResult.OK;
             this.Close();
         }

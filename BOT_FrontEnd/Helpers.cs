@@ -12,7 +12,7 @@ namespace BOT_FrontEnd
                                                               ControllerProperty.RotationX, ControllerProperty.RotationY};
 
         public static ControllerProperty[] DefaultJoystick = { ControllerProperty.Z, ControllerProperty.X, ControllerProperty.Y,
-                                                              ControllerProperty.RotationX, ControllerProperty.RotationY};
+                                                              ControllerProperty.Button_0, ControllerProperty.Button_1};
     }
 
     public enum ControllerProperty
@@ -94,15 +94,15 @@ namespace BOT_FrontEnd
 
     public class ChannelConfigValues
     {
-        public int MIN;
-        public int MAX;
-        public int CENTER;
+        public double MIN;
+        public double MAX;
+        public double CENTER;
 
         public ChannelConfigValues()
         {
-            MIN = 0;
-            MAX = 0;
-            CENTER = 0;
+            MIN = 0.0;
+            MAX = 0.0;
+            CENTER = 0.0;
         }
     }
 }
