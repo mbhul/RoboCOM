@@ -1,0 +1,46 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <ApplicationIcon />
+    <StartupObject />
+
+    <UseWindowsForms>true</UseWindowsForms>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AssemblyName>BOTFE_Core</AssemblyName>
+    <RootNamespace>BOT_FrontEnd</RootNamespace>
+    
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\BOT_FrontEnd\**\*.cs" />
+    <EmbeddedResource Include="..\BOT_FrontEnd\**\*.resx" />
+    <EmbeddedResource Include="..\BOT_FrontEnd\*.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Remove="..\BOT_FrontEnd\Config.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\BOT_FrontEnd\Config.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.IO.Ports" Version="4.6.0-preview4.19164.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="SlimDX">
+      <HintPath>slimdx\SlimDX.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>
