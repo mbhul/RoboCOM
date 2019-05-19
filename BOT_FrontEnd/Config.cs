@@ -60,7 +60,7 @@ namespace BOT_FrontEnd
         {
             XmlNode cNode = configXML.SelectNodes(String.Format("//Controller[@GUID='{0}']", controller_id.ToString())).Item(0);
 
-            if(!cNode.HasChildNodes)
+            if(cNode == null || !cNode.HasChildNodes)
             {
                 cNode = configXML.SelectNodes("//Controller[@GUID='Default']").Item(0);
             }
@@ -108,6 +108,21 @@ namespace BOT_FrontEnd
             cmdPrefixRelative = configRoot.SelectNodes(".//StartOfFrame[@type='relative']").Item(0).InnerXml;
         }
 
+        //Create new Controller Xml node by copying the 'Default' controller
+        private XmlNode CreateNewControllerNode(String strGuid)
+        {
+            XmlNode cNode = configXML.SelectNodes("//Controller[@GUID='Default']").Item(0);
+            XmlNode newCNode = cNode.Clone();
+
+            //XmlAttribute newGuid = configXML.CreateAttribute("GUID");
+            //newGuid.Value = strGuid;
+
+            newCNode.Attributes["GUID"].Value = strGuid;
+            configXML.DocumentElement.AppendChild(newCNode);
+
+            return newCNode;
+        }
+
         private void SetControllerConfig(XmlNode configRoot)
         {
             int temp_mapping = 0;
@@ -144,6 +159,12 @@ namespace BOT_FrontEnd
             if(configXML != null)
             {
                 XmlNode cNode = configXML.SelectNodes(String.Format("//Controller[@GUID='{0}']", controller.DeviceGuid.ToString())).Item(0);
+
+                //If no node exists yet for this controller then add it
+                if (cNode == null)
+                {
+                    cNode = CreateNewControllerNode(controller.DeviceGuid.ToString());
+                }
 
                 inputMapping = controller.ChannelMapping;
                 inputInverted = controller.ChannelInverted;
