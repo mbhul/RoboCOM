@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.31101.0
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28803.352
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BOT_FrontEnd", "BOT_FrontEnd\BOT_FrontEnd.csproj", "{C89DE791-DB73-40DF-B352-9D51174A637A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BOT_FrontEnd_Core", "BOT_FrontEnd_Core\BOT_FrontEnd_Core.csproj", "{7066E7CA-559C-48EE-87B9-4A569147323B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,8 +23,19 @@ Global
 		{C89DE791-DB73-40DF-B352-9D51174A637A}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C89DE791-DB73-40DF-B352-9D51174A637A}.Release|x86.ActiveCfg = Release|x86
 		{C89DE791-DB73-40DF-B352-9D51174A637A}.Release|x86.Build.0 = Release|x86
+		{7066E7CA-559C-48EE-87B9-4A569147323B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7066E7CA-559C-48EE-87B9-4A569147323B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7066E7CA-559C-48EE-87B9-4A569147323B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{7066E7CA-559C-48EE-87B9-4A569147323B}.Debug|x86.Build.0 = Debug|Any CPU
+		{7066E7CA-559C-48EE-87B9-4A569147323B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7066E7CA-559C-48EE-87B9-4A569147323B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7066E7CA-559C-48EE-87B9-4A569147323B}.Release|x86.ActiveCfg = Release|Any CPU
+		{7066E7CA-559C-48EE-87B9-4A569147323B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C0D7FF51-3A53-44EA-BD82-C445A3D10EE3}
 	EndGlobalSection
 EndGlobal
