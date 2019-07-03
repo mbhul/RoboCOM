@@ -84,40 +84,43 @@ namespace BOT_FrontEnd
          ********************************************************************************/
         public void Poll()
         {
-            currentDevice.Poll();
-            deviceState = currentDevice.GetCurrentState();
-
-            if(ChannelMapping != null)
+            if(currentDevice != null && deviceState != null)
             {
-                for(int i = 0; i < (int)ChannelNumber.NUM_CHANNELS; i++)
-                {
-                    switch(ChannelMapping[i])
-                    {
-                        case ControllerProperty.X:
-                            CHANNEL[i] = deviceState.X;
-                            break;
-                        case ControllerProperty.Y:
-                            CHANNEL[i] = deviceState.Y;
-                            break;
-                        case ControllerProperty.Z:
-                            CHANNEL[i] = deviceState.Z;
-                            break;
-                        case ControllerProperty.RotationX:
-                            CHANNEL[i] = deviceState.RotationX;
-                            break;
-                        case ControllerProperty.RotationY:
-                            CHANNEL[i] = deviceState.RotationY;
-                            break;
-                        case ControllerProperty.RotationZ:
-                            CHANNEL[i] = deviceState.RotationZ;
-                            break;
-                        default:
-                            break;
-                    }
+                currentDevice.Poll();
+                deviceState = currentDevice.GetCurrentState();
 
-                    if(ChannelInverted[i])
+                if (ChannelMapping != null)
+                {
+                    for (int i = 0; i < (int)ChannelNumber.NUM_CHANNELS; i++)
                     {
-                        CHANNEL[i] = (int)full_scale - CHANNEL[i];
+                        switch (ChannelMapping[i])
+                        {
+                            case ControllerProperty.X:
+                                CHANNEL[i] = deviceState.X;
+                                break;
+                            case ControllerProperty.Y:
+                                CHANNEL[i] = deviceState.Y;
+                                break;
+                            case ControllerProperty.Z:
+                                CHANNEL[i] = deviceState.Z;
+                                break;
+                            case ControllerProperty.RotationX:
+                                CHANNEL[i] = deviceState.RotationX;
+                                break;
+                            case ControllerProperty.RotationY:
+                                CHANNEL[i] = deviceState.RotationY;
+                                break;
+                            case ControllerProperty.RotationZ:
+                                CHANNEL[i] = deviceState.RotationZ;
+                                break;
+                            default:
+                                break;
+                        }
+
+                        if (ChannelInverted[i])
+                        {
+                            CHANNEL[i] = (int)full_scale - CHANNEL[i];
+                        }
                     }
                 }
             }

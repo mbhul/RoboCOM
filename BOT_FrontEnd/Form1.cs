@@ -151,6 +151,7 @@ namespace BOT_FrontEnd
 
             //add the keyboard at the end
             ControllerSelect.Items.Add("Keyboard");
+            connected_controllers.Add(new Guid());
         }
 
         /********************************************************************************
