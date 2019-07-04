@@ -125,7 +125,6 @@
             // MyVCOM
             // 
             this.MyVCOM.BaudRate = 115200;
-            this.MyVCOM.DiscardNull = true;
             this.MyVCOM.DtrEnable = true;
             this.MyVCOM.PortName = "COM5";
             this.MyVCOM.ReadBufferSize = 2048;
@@ -174,15 +173,15 @@
             // PortNumber
             // 
             this.PortNumber.FormattingEnabled = true;
-            this.PortNumber.Location = new System.Drawing.Point(193, 23);
+            this.PortNumber.Location = new System.Drawing.Point(51, 57);
             this.PortNumber.Name = "PortNumber";
-            this.PortNumber.Size = new System.Drawing.Size(41, 21);
+            this.PortNumber.Size = new System.Drawing.Size(92, 21);
             this.PortNumber.TabIndex = 8;
             // 
             // textBox2
             // 
             this.textBox2.Enabled = false;
-            this.textBox2.Location = new System.Drawing.Point(67, 54);
+            this.textBox2.Location = new System.Drawing.Point(190, 23);
             this.textBox2.Name = "textBox2";
             this.textBox2.ReadOnly = true;
             this.textBox2.Size = new System.Drawing.Size(44, 20);
@@ -194,7 +193,7 @@
             // 
             this.label6.AutoSize = true;
             this.label6.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label6.Location = new System.Drawing.Point(6, 57);
+            this.label6.Location = new System.Drawing.Point(152, 27);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(36, 13);
             this.label6.TabIndex = 6;
@@ -202,7 +201,6 @@
             // 
             // textBox1
             // 
-            this.textBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.textBox1.Enabled = false;
             this.textBox1.Location = new System.Drawing.Point(210, 53);
             this.textBox1.Name = "textBox1";
@@ -214,7 +212,6 @@
             // 
             // label5
             // 
-            this.label5.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label5.AutoSize = true;
             this.label5.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label5.Location = new System.Drawing.Point(152, 57);
@@ -248,10 +245,9 @@
             // 
             // label3
             // 
-            this.label3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label3.AutoSize = true;
             this.label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label3.Location = new System.Drawing.Point(152, 27);
+            this.label3.Location = new System.Drawing.Point(6, 60);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(39, 13);
             this.label3.TabIndex = 0;
@@ -523,10 +519,9 @@
             // 
             // ConnStatusLbl
             // 
-            this.ConnStatusLbl.AutoSize = true;
-            this.ConnStatusLbl.Location = new System.Drawing.Point(327, 34);
+            this.ConnStatusLbl.Location = new System.Drawing.Point(324, 35);
             this.ConnStatusLbl.Name = "ConnStatusLbl";
-            this.ConnStatusLbl.Size = new System.Drawing.Size(92, 13);
+            this.ConnStatusLbl.Size = new System.Drawing.Size(100, 13);
             this.ConnStatusLbl.TabIndex = 13;
             this.ConnStatusLbl.Text = "Not Connected";
             // 
@@ -534,7 +529,7 @@
             // 
             this.label7.AutoSize = true;
             this.label7.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label7.Location = new System.Drawing.Point(327, 14);
+            this.label7.Location = new System.Drawing.Point(324, 14);
             this.label7.Name = "label7";
             this.label7.Size = new System.Drawing.Size(97, 13);
             this.label7.TabIndex = 12;
@@ -603,9 +598,14 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(701, 483);
             this.Controls.Add(this.tableLayoutPanel1);
+            this.KeyPreview = true;
             this.Name = "Form1";
             this.Text = "BOT COM";
             this.Load += new System.EventHandler(this.Form_Load);
+            this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.Form_KeyDown);
+            this.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.Form_KeyPress);
+            this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.Form_KeyUp);
+            this.PreviewKeyDown += new System.Windows.Forms.PreviewKeyDownEventHandler(this.Form_PreviewKeyDown);
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
             this.PadInPanel.ResumeLayout(false);

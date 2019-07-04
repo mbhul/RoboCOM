@@ -6,7 +6,6 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
-using SlimDX.DirectInput;
 
 namespace BOT_FrontEnd
 {
@@ -31,11 +30,10 @@ namespace BOT_FrontEnd
         private bool inputInverted = false;
 
         public ConfigForm(ref Controller ctl, ref Config cfg)
-        {
-            DeviceInstance di = ctl.getCurrentDeviceInstance();
-            
+        {            
             InitializeComponent();
             activeController = ctl;
+            activeController.RestartController();
             activeConfig = cfg;
             activeController.Poll();
             full_scale = activeController.getFS();
@@ -141,8 +139,13 @@ namespace BOT_FrontEnd
          ********************************************************************************/
         private void StartControllerInput()
         {
+            while (ControllerPoller.IsBusy)
+            {
+                ControllerPoller.CancelAsync();
+                System.Threading.Thread.Sleep(10);
+            }
             ControllerPoller.RunWorkerAsync();
-            System.Threading.Thread.Sleep(10);
+            System.Threading.Thread.Sleep(50);
         }
 
         /********************************************************************************
@@ -157,57 +160,60 @@ namespace BOT_FrontEnd
             Control[] labels = {label1, label2, label3, label4, label5};
             String temp_str = "";
 
-            foreach(ControllerProperty cp in ChannelMapping)
+            if (ChannelMapping != null)
             {
-                switch(cp)
+                foreach (ControllerProperty cp in ChannelMapping)
                 {
-                    case ControllerProperty.X:
-                        temp_str = StringEnum.GetStringValue(ControllerProperty.X);
-                        break;
-                    case ControllerProperty.Y:
-                        temp_str = StringEnum.GetStringValue(ControllerProperty.Y);
-                        break;
-                    case ControllerProperty.Z:
-                        temp_str = StringEnum.GetStringValue(ControllerProperty.Z);
-                        break;
-                    case ControllerProperty.RotationX:
-                        temp_str = StringEnum.GetStringValue(ControllerProperty.RotationX);
-                        break;
-                    case ControllerProperty.RotationY:
-                        temp_str = StringEnum.GetStringValue(ControllerProperty.RotationY);
-                        break;
-                    case ControllerProperty.RotationZ:
-                        temp_str = StringEnum.GetStringValue(ControllerProperty.RotationZ);
-                        break;
-                    case ControllerProperty.Button_0:
-                        temp_str = StringEnum.GetStringValue(ControllerProperty.Button_0);
-                        break;
-                    case ControllerProperty.Button_1:
-                        temp_str = StringEnum.GetStringValue(ControllerProperty.Button_1);
-                        break;
-                    case ControllerProperty.Button_2:
-                        temp_str = StringEnum.GetStringValue(ControllerProperty.Button_2);
-                        break;
-                    case ControllerProperty.Button_3:
-                        temp_str = StringEnum.GetStringValue(ControllerProperty.Button_3);
-                        break;
-                    case ControllerProperty.Button_4:
-                        temp_str = StringEnum.GetStringValue(ControllerProperty.Button_4);
-                        break;
-                    default:
-                        break;
-                }
+                    switch (cp)
+                    {
+                        case ControllerProperty.X:
+                            temp_str = StringEnum.GetStringValue(ControllerProperty.X);
+                            break;
+                        case ControllerProperty.Y:
+                            temp_str = StringEnum.GetStringValue(ControllerProperty.Y);
+                            break;
+                        case ControllerProperty.Z:
+                            temp_str = StringEnum.GetStringValue(ControllerProperty.Z);
+                            break;
+                        case ControllerProperty.RotationX:
+                            temp_str = StringEnum.GetStringValue(ControllerProperty.RotationX);
+                            break;
+                        case ControllerProperty.RotationY:
+                            temp_str = StringEnum.GetStringValue(ControllerProperty.RotationY);
+                            break;
+                        case ControllerProperty.RotationZ:
+                            temp_str = StringEnum.GetStringValue(ControllerProperty.RotationZ);
+                            break;
+                        case ControllerProperty.Button_0:
+                            temp_str = StringEnum.GetStringValue(ControllerProperty.Button_0);
+                            break;
+                        case ControllerProperty.Button_1:
+                            temp_str = StringEnum.GetStringValue(ControllerProperty.Button_1);
+                            break;
+                        case ControllerProperty.Button_2:
+                            temp_str = StringEnum.GetStringValue(ControllerProperty.Button_2);
+                            break;
+                        case ControllerProperty.Button_3:
+                            temp_str = StringEnum.GetStringValue(ControllerProperty.Button_3);
+                            break;
+                        case ControllerProperty.Button_4:
+                            temp_str = StringEnum.GetStringValue(ControllerProperty.Button_4);
+                            break;
+                        default:
+                            break;
+                    }
 
-                if (ChannelInverted[index] == true)
-                {
-                    temp_str = "-" + temp_str;
-                }
+                    if (ChannelInverted[index] == true)
+                    {
+                        temp_str = "-" + temp_str;
+                    }
 
-                labels[index].Text = temp_str;
-                labels[index].Font = new Font(labels[index].Font, FontStyle.Bold);
-                labels[index].BackColor = SystemColors.Control;
-                index++;
-            }
+                    labels[index].Text = temp_str;
+                    labels[index].Font = new Font(labels[index].Font, FontStyle.Bold);
+                    labels[index].BackColor = SystemColors.Control;
+                    index++;
+                }
+            } 
         }
 
         /********************************************************************************
@@ -218,6 +224,7 @@ namespace BOT_FrontEnd
         private void StopControllerInput()
         {
             ControllerPoller.CancelAsync();
+            System.Threading.Thread.Sleep(50);
         }
 
         /********************************************************************************
@@ -293,7 +300,7 @@ namespace BOT_FrontEnd
             bool[] buttons;
 
             state = activeController.getState();
-            buttons = state.GetButtons();
+            buttons = state.GetButtons().ToArray();
             inputInverted = false;
 
             for (int i = 0; i < (int)ControllerProperty.NUM_BUTTONS; i++)

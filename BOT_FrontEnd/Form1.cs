@@ -7,8 +7,8 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using System.Windows.Forms;
-using SlimDX.DirectInput;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using System.Xml;
 
 namespace BOT_FrontEnd
@@ -21,13 +21,16 @@ namespace BOT_FrontEnd
 
         private Controller controller;
 
-        private List<Guid> connected_controllers;
+        private List<string> connected_controllers;
         private bool sent_stop;
         private bool PauseTransfer;
         private double z_value;
         private string command_prev;
 
-        private DirectInput DI;
+        //private Tuple<Keys, bool>[6];
+        private Dictionary<Keys, bool> InputKeys;
+        
+
         private Config ctlConfig;
 
         public Form1()
@@ -36,6 +39,7 @@ namespace BOT_FrontEnd
             {
                 //Initialize and set defaults
                 InitializeComponent();
+
                 bold_font = new Font(InComTxt.Font, FontStyle.Bold);
                 BaudSelect.SelectedIndex = 2;
                 sent_stop = true;
@@ -57,7 +61,21 @@ namespace BOT_FrontEnd
                 ctlConfig = new Config("Config.xml");
                 command_prev = "";
 
-                DI = new DirectInput();
+                //Define the valid Keyboard input keys for 'Controller' input
+                InputKeys = new Dictionary<Keys, bool>();
+                InputKeys.Add(Keys.Up, false);
+                InputKeys.Add(Keys.Down, false);
+                InputKeys.Add(Keys.Left, false);
+                InputKeys.Add(Keys.Right, false);
+                InputKeys.Add(Keys.W, false);
+                InputKeys.Add(Keys.S, false);
+
+                //Add the PreviewKeyDown event handler to every control on the form
+                Control[] ctls = GetAll(this).ToArray<Control>();
+                foreach (Control ctl in ctls)
+                {
+                    ctl.PreviewKeyDown += new System.Windows.Forms.PreviewKeyDownEventHandler(this.Form_PreviewKeyDown);
+                }
             }
             catch (FileLoadException e)
             {
@@ -68,11 +86,22 @@ namespace BOT_FrontEnd
                     sw.WriteLine(e.StackTrace);
                 }
             }
+
         }
 
         private void Form_Load(object sender, EventArgs e)
         {
             
+        }
+
+
+        //Method to get all controls on the form, including nested ones
+        public IEnumerable<Control> GetAll(Control control)
+        {
+            var controls = control.Controls.Cast<Control>();
+
+            return controls.SelectMany(ctrl => GetAll(ctrl))
+                                      .Concat(controls);
         }
 
         /********************************************************************************
@@ -125,32 +154,42 @@ namespace BOT_FrontEnd
         {
             ControllerSelect.Items.Clear(); 
             controller = new Controller(this.Handle);
-            connected_controllers = new List<Guid>();
+            connected_controllers = new List<string>();
 
             //Create the worker thread that will poll the selected controller for its current state
             ControllerPoller.WorkerSupportsCancellation = true;
             ControllerPoller.DoWork += new DoWorkEventHandler(ControllerPoller_DoWork);
             ControllerPoller.RunWorkerCompleted += new RunWorkerCompletedEventHandler(ControllerPoller_RunWorkerCompleted);
 
-            //Get the list of connected controllers (we want to use the gamepad so specify GameControl device type)
-            IList<DeviceInstance> ControllerList = DI.GetDevices(DeviceType.Gamepad, DeviceEnumerationFlags.AttachedOnly);
-
-            foreach (DeviceInstance dev in DI.GetDevices(DeviceType.Joystick, DeviceEnumerationFlags.AttachedOnly))
+            //Get the list of connected controllers
+            try
             {
-                ControllerList.Add(dev);
-            }
+                string[] devFiles = Directory.GetFiles("/dev/input/").Select(Path.GetFileName).ToArray();
 
-            if (ControllerList.Count > 0)
-            {
-                foreach (DeviceInstance deviceInstance in ControllerList)
+                if (devFiles.Count() > 0)
                 {
-                    ControllerSelect.Items.Add(deviceInstance.InstanceName);
-                    connected_controllers.Add(deviceInstance.InstanceGuid);
+                    foreach (string fname in devFiles)
+                    {
+                        //Debug on PI
+                        //InComTxt.AppendText(fname + "\r\n");
+                        //InComTxt.AppendText(Regex.Match(fname, "js[0-9]*").Value);
+
+                        if (Regex.Match(fname, "js[0-9]*").Success)
+                        {
+                            ControllerSelect.Items.Add(fname);
+                            connected_controllers.Add("/dev/input/" + fname);
+                        }
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+
             }
 
             //add the keyboard at the end
             ControllerSelect.Items.Add("Keyboard");
+            connected_controllers.Add("Keyboard");
         }
 
         /********************************************************************************
@@ -346,12 +385,12 @@ namespace BOT_FrontEnd
                     double key_increment = this.controller.getFS() / 2;
 
                     //**** Get key states *****//
-                    x += KeyboardInfo.GetKeyState(Keys.Left).IsPressed ? -0.5 : 0;
-                    x += KeyboardInfo.GetKeyState(Keys.Right).IsPressed ? 0.5 : 0;
-                    y += KeyboardInfo.GetKeyState(Keys.Up).IsPressed ? -0.5 : 0;
-                    y += KeyboardInfo.GetKeyState(Keys.Down).IsPressed ? 0.5 : 0;
-                    z += KeyboardInfo.GetKeyState(Keys.W).IsPressed ? 0.05 : 0;
-                    z += KeyboardInfo.GetKeyState(Keys.S).IsPressed ? -0.05 : 0;
+                    x += this.InputKeys[Keys.Left] ? -0.5 : 0; //KeyboardInfo.GetKeyState(Keys.Left).IsPressed ? -0.5 : 0;
+                    x += this.InputKeys[Keys.Right] ? 0.5 : 0; //KeyboardInfo.GetKeyState(Keys.Right).IsPressed ? 0.5 : 0;
+                    y += this.InputKeys[Keys.Up] ? -0.5 : 0; //KeyboardInfo.GetKeyState(Keys.Up).IsPressed ? -0.5 : 0;
+                    y += this.InputKeys[Keys.Down] ? 0.5 : 0; //KeyboardInfo.GetKeyState(Keys.Down).IsPressed ? 0.5 : 0;
+                    z += this.InputKeys[Keys.W] ? 0.05 : 0; //KeyboardInfo.GetKeyState(Keys.W).IsPressed ? 0.05 : 0;
+                    z += this.InputKeys[Keys.S] ? -0.05 : 0; //KeyboardInfo.GetKeyState(Keys.S).IsPressed ? -0.05 : 0;
 
                     //**** Scale key values for drawing *****//
                     x = (x + 1) * key_increment;
@@ -423,8 +462,8 @@ namespace BOT_FrontEnd
                 else
                 {
                     JoystickState state = controller.getState();
-                    bool[] buttons = state.GetButtons();
-                    int[] pov = state.GetPointOfViewControllers();
+                    bool[] buttons = state.GetButtons().ToArray();
+                    //int[] pov = state.GetPointOfViewControllers();
                     float fs = (float)controller.getFS();
                     bool z_condition = false;
 
@@ -453,7 +492,7 @@ namespace BOT_FrontEnd
                     }
 
                     //**** Convert the values to the configured command scale (in Config.xml) *****//
-                    double angle_A_B = (pov[0] == -1) ? -1 : (pov[0] / 100) * (Math.PI / 180);
+                    double angle_A_B = 0; // (pov[0] == -1) ? -1 : (pov[0] / 100) * (Math.PI / 180);
 
                     x = ((float)(x - fs / 2) / fs) * x_fs;
                     x += x_def;
@@ -687,6 +726,12 @@ namespace BOT_FrontEnd
         private void StartControllerInput()
         {
             controller.SetCurrent(connected_controllers[ControllerSelect.SelectedIndex]);
+
+            while(ControllerPoller.IsBusy)
+            {
+                ControllerPoller.CancelAsync();
+                System.Threading.Thread.Sleep(10);
+            }
             ControllerPoller.RunWorkerAsync();
 
             SendTimer.Interval = (int)TimerIntSelect.Value;
@@ -706,6 +751,7 @@ namespace BOT_FrontEnd
             SendTimer.Stop();
             SendTimer.Enabled = false;
             ControllerPoller.CancelAsync();
+            System.Threading.Thread.Sleep(50);
         }
 
         /********************************************************************************
@@ -862,21 +908,101 @@ namespace BOT_FrontEnd
             }
         }
 
+        /********************************************************************************
+         * EVENT HANDLER:   btnCtlSettings_Click
+         * Description:     Button click handler for controller settings button                
+         ********************************************************************************/
         private void btnCtlSettings_Click(object sender, EventArgs e)
         {
             ConfigForm configPanel = new ConfigForm(ref this.controller, ref this.ctlConfig);
+            Form testform = new Form();
+
             StopControllerInput();
 
-            var result = configPanel.ShowDialog();
-            if(result == System.Windows.Forms.DialogResult.OK)
+            var result = configPanel.ShowDialog(this);
+            //var result = testform.ShowDialog(this);
+
+            if (result == System.Windows.Forms.DialogResult.OK)
             {
                 controller.SetChannelMapping(configPanel.ChannelMapping, configPanel.ChannelInverted);
                 ctlConfig = configPanel.activeConfig;
                 ctlConfig.SaveToFile("Config.xml", controller);
             }
 
+            configPanel.Dispose();
             StartControllerInput();
         }
 
+        /********************************************************************************
+         * EVENT HANDLER:   Form_KeyDown
+         * Description:     Keyboard KeyDown event handler               
+         ********************************************************************************/
+        private void Form_KeyDown(object sender, KeyEventArgs e)
+        {
+            List<Keys> keysCopy = new List<Keys>(this.InputKeys.Keys);
+
+            if (this.radioPad.Checked)
+            {
+                foreach (Keys entry in keysCopy)
+                {
+                    if(e.KeyCode == entry)
+                    {
+                        InputKeys[entry] = true;
+                    }
+                }
+                e.SuppressKeyPress = true;
+                e.Handled = true;
+            }
+        }
+
+        /********************************************************************************
+         * EVENT HANDLER:   Form_KeyUp
+         * Description:     Keyboard KeyUp event handler               
+         ********************************************************************************/
+        private void Form_KeyUp(object sender, KeyEventArgs e)
+        {
+            List<Keys> keysCopy = new List<Keys>(this.InputKeys.Keys);
+
+            if (this.radioPad.Checked)
+            {
+                foreach (Keys entry in keysCopy)
+                {
+                    if (e.KeyCode == entry)
+                    {
+                        InputKeys[entry] = false;
+                    }
+                }
+                e.SuppressKeyPress = true;
+                e.Handled = true;
+            }
+        }
+
+        private void Form_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            //if (this.radioPad.Checked)
+            //{
+            //    e.Handled = true;
+            //}
+        }
+
+        /********************************************************************************
+         * EVENT HANDLER:   Form_PreviewKeyDown
+         * Description:     Default handler for all controls' PreviewKeyDown event
+         *                  Needed in order to register arrow key input with the form
+         ********************************************************************************/
+        private void Form_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
+        {
+            switch(e.KeyCode)
+            {
+                case Keys.Up:
+                case Keys.Down:
+                case Keys.Left:
+                case Keys.Right:
+                    e.IsInputKey = true;
+                    break;
+                default:
+                    break;
+            }
+        }
     }
 }

@@ -473,6 +473,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.ClientSize = new System.Drawing.Size(678, 230);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.label18);
@@ -516,7 +517,6 @@
             this.Controls.Add(this.btnCH3);
             this.Controls.Add(this.btnCH2);
             this.Controls.Add(this.btnCH1);
-            this.MaximumSize = new System.Drawing.Size(694, 269);
             this.MinimumSize = new System.Drawing.Size(694, 269);
             this.Name = "ConfigForm";
             this.Text = "Controller Setup";

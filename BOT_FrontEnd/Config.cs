@@ -68,6 +68,25 @@ namespace BOT_FrontEnd
             ParseControllerConfig(cNode);
         }
 
+        public void GetConfig(string inputFileName)
+        {
+            try
+            {
+                XmlNode cNode = configXML.SelectNodes(String.Format("//Controller[@GUID='{0}']", inputFileName)).Item(0);
+
+                if (cNode == null || !cNode.HasChildNodes)
+                {
+                    cNode = configXML.SelectNodes("//Controller[@GUID='Default']").Item(0);
+                }
+
+                ParseControllerConfig(cNode);
+            }
+            catch (Exception ex)
+            {
+
+            }
+        }
+
         public void GetDefaultConfig()
         {
             XmlNode cNode = configXML.SelectNodes("//Controller[@GUID='Default']").Item(0);

@@ -1,27 +1,29 @@
 ﻿using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using SlimDX.DirectInput;
+using System.Threading;
 
 namespace BOT_FrontEnd
 {
-    //Wrapping class for a DirectX input device (ie. gamepad)
+    //Wrapping class
     public class Controller
     {
-        private DirectInput directInput;
-
-        private Joystick currentDevice;     //current device
-        private JoystickState deviceState;  //joystickstate of the gamepad
+        private Joystick currentDevice;     //current device         
         private IntPtr hWnd;                //handle to the parent of this device instance (ie. the main program window)
-        private Capabilities devCaps;       //device capabilities 
         private long full_scale;            //size of joystick axes
         public string Name { get; private set; }
         public Guid DeviceGuid { get; private set; }
+        public String InputFile { get; private set; }
 
         private int[] CHANNEL;
         public ControllerProperty[] ChannelMapping { get; private set; }
         public bool[] ChannelInverted { get; private set; }
+
+        private FileStream JFS;
+        private byte[] buff = new byte[8];
+        private JoystickState deviceState = new JoystickState();
 
         public Controller(IntPtr Owner)
         {
@@ -32,49 +34,47 @@ namespace BOT_FrontEnd
             ChannelMapping = null;
 
             CHANNEL = new int[(int)ChannelNumber.NUM_CHANNELS];
-
-            directInput = new DirectInput();
         }
 
         /********************************************************************************
          * FUNCTION:            SetCurrent
-         * Description:         Sets the current input device instance based on passed GUID
+         * Description:         Sets the current input device file
          * Parameters:  
          *      device_guid -   The GUID of the input device
          ********************************************************************************/
-        public void SetCurrent(Guid device_guid)
+        public void SetCurrent(String inputFileName)
         {
-            DeviceInstance di;
+            if (inputFileName == InputFile || inputFileName == "Keyboard") { return; }
 
-            if (device_guid == DeviceGuid) { return; }
-            if (currentDevice != null) 
+            if(JFS != null)
             {
-                currentDevice.Unacquire();
-                currentDevice.Dispose(); 
+                JFS.Close();
             }
+            JFS = new FileStream(inputFileName, FileMode.Open, FileAccess.Read, FileShare.Read);
 
-            currentDevice = new Joystick(directInput, device_guid);
-            Name = currentDevice.Properties.InstanceName;
-            DeviceGuid = device_guid;
+            currentDevice = new Joystick();
+            buff = new byte[8];
 
-            currentDevice.SetCooperativeLevel(hWnd, CooperativeLevel.Background | CooperativeLevel.Nonexclusive);
-            currentDevice.Acquire();
-
-            devCaps = currentDevice.Capabilities;
+            Name = inputFileName; // currentDevice.Properties.InstanceName;
+            InputFile = inputFileName;
 
             this.Poll();
-            full_scale = 2 * deviceState.X;
+            full_scale = 65535; // 2 * deviceState.X;
 
-            di = getCurrentDeviceInstance();
-            if (di.Type == DeviceType.Joystick)
-            {
-                ChannelMapping = Helpers.DefaultJoystick;
-            }
-            else
-            {
-                ChannelMapping = Helpers.DefaultGamepad;
-            }
+            ChannelMapping = Helpers.DefaultJoystick;
             ChannelInverted = Enumerable.Repeat<bool>(false, (int)ChannelNumber.NUM_CHANNELS).ToArray();
+        }
+
+        public void RestartController()
+        {
+            if(InputFile != "")
+            {
+                if (JFS != null)
+                {
+                    JFS.Close();
+                }
+                JFS = new FileStream(InputFile, FileMode.Open, FileAccess.Read, FileShare.Read);
+            } 
         }
 
         /********************************************************************************
@@ -84,43 +84,51 @@ namespace BOT_FrontEnd
          ********************************************************************************/
         public void Poll()
         {
-            currentDevice.Poll();
-            deviceState = currentDevice.GetCurrentState();
+            //currentDevice.Poll();
+            //deviceState = currentDevice.GetCurrentState();
 
-            if(ChannelMapping != null)
+            // Read 8 bytes from file and analyze.
+            if(JFS != null && currentDevice != null)
             {
-                for(int i = 0; i < (int)ChannelNumber.NUM_CHANNELS; i++)
-                {
-                    switch(ChannelMapping[i])
-                    {
-                        case ControllerProperty.X:
-                            CHANNEL[i] = deviceState.X;
-                            break;
-                        case ControllerProperty.Y:
-                            CHANNEL[i] = deviceState.Y;
-                            break;
-                        case ControllerProperty.Z:
-                            CHANNEL[i] = deviceState.Z;
-                            break;
-                        case ControllerProperty.RotationX:
-                            CHANNEL[i] = deviceState.RotationX;
-                            break;
-                        case ControllerProperty.RotationY:
-                            CHANNEL[i] = deviceState.RotationY;
-                            break;
-                        case ControllerProperty.RotationZ:
-                            CHANNEL[i] = deviceState.RotationZ;
-                            break;
-                        default:
-                            break;
-                    }
+                JFS.Read(buff, 0, 8);
+                currentDevice.DetectChange(buff);
+                this.getState();
 
-                    if(ChannelInverted[i])
+                if (ChannelMapping != null)
+                {
+                    for (int i = 0; i < (int)ChannelNumber.NUM_CHANNELS; i++)
                     {
-                        CHANNEL[i] = (int)full_scale - CHANNEL[i];
+                        switch (ChannelMapping[i])
+                        {
+                            case ControllerProperty.X:
+                                CHANNEL[i] = deviceState.X;
+                                break;
+                            case ControllerProperty.Y:
+                                CHANNEL[i] = deviceState.Y;
+                                break;
+                            case ControllerProperty.Z:
+                                CHANNEL[i] = deviceState.Z;
+                                break;
+                            case ControllerProperty.RotationX:
+                                CHANNEL[i] = deviceState.RotationX;
+                                break;
+                            case ControllerProperty.RotationY:
+                                CHANNEL[i] = deviceState.RotationY;
+                                break;
+                            case ControllerProperty.RotationZ:
+                                CHANNEL[i] = deviceState.RotationZ;
+                                break;
+                            default:
+                                break;
+                        }
+
+                        if (ChannelInverted[i])
+                        {
+                            CHANNEL[i] = (int)full_scale - CHANNEL[i];
+                        }
                     }
                 }
-            }
+            } 
         }
 
         //Public GET properties
@@ -156,6 +164,45 @@ namespace BOT_FrontEnd
          ********************************************************************************/
         public JoystickState getState()
         {
+            for(int count = 0; count < currentDevice.Axis.Count; count++)
+            {
+                switch(count)
+                {
+                    case 0:
+                        deviceState.X = currentDevice.Axis[0] + ((int)full_scale / 2);
+                        break;
+                    case 1:
+                        deviceState.Y = currentDevice.Axis[1] + ((int)full_scale / 2);
+                        break;
+                    case 2:
+                        deviceState.Z = currentDevice.Axis[2] + ((int)full_scale / 2);
+                        break;
+                    case 3:
+                        deviceState.RotationX = currentDevice.Axis[3] + ((int)full_scale / 2);
+                        break;
+                    case 4:
+                        deviceState.RotationY = currentDevice.Axis[4] + ((int)full_scale / 2);
+                        break;
+                    case 5:
+                        deviceState.RotationZ = currentDevice.Axis[5] + ((int)full_scale / 2);
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            for (int count = 0; count < currentDevice.Button.Count; count++)
+            {
+                if (count == deviceState.buttons.Count)
+                {
+                    deviceState.buttons.Add(currentDevice.Button[(byte)count]);
+                }
+                else
+                {
+                    deviceState.buttons[count] = currentDevice.Button[(byte)count];
+                }
+            }
+
             return deviceState;
         }
 
@@ -169,22 +216,22 @@ namespace BOT_FrontEnd
             return full_scale;
         }
 
-        public DeviceInstance getCurrentDeviceInstance()
-        {
-            DeviceInstance curDevice = null;
-            IList<DeviceInstance> ControllerList = directInput.GetDevices();
+        //public DeviceInstance getCurrentDeviceInstance()
+        //{
+        //    DeviceInstance curDevice = null;
+        //    IList<DeviceInstance> ControllerList = directInput.GetDevices();
 
-            foreach(DeviceInstance di in ControllerList)
-            {
-                if(di.InstanceGuid == this.DeviceGuid)
-                {
-                    curDevice = di;
-                    break;
-                }
-            }
+        //    foreach(DeviceInstance di in ControllerList)
+        //    {
+        //        if(di.InstanceGuid == this.DeviceGuid)
+        //        {
+        //            curDevice = di;
+        //            break;
+        //        }
+        //    }
 
-            return curDevice;
-        }
+        //    return curDevice;
+        //}
 
         public void SetChannelMapping(ControllerProperty[] map, bool[] inversion)
         {
@@ -192,5 +239,104 @@ namespace BOT_FrontEnd
             ChannelInverted = inversion;
         }
         
+    }
+
+    public class Joystick
+    {
+        enum STATE : byte { PRESSED = 0x01, RELEASED = 0x00 }
+        enum TYPE : byte { AXIS = 0x02, BUTTON = 0x01 }
+        enum MODE : byte { CONFIGURATION = 0x80, VALUE = 0x00 }
+
+        /// <summary>
+        /// Buttons collection, key: address, bool: value
+        /// </summary>
+        public Dictionary<byte, bool> Button;
+
+        /// <summary>
+        /// Axis collection, key: address, short: value
+        /// </summary>
+        public Dictionary<byte, short> Axis;
+
+        public Joystick()
+        {
+            Button = new Dictionary<byte, bool>();
+            Axis = new Dictionary<byte, short>();
+        }
+
+        /// <summary>
+        /// Function recognizes flags in buffer and modifies value of button, axis or configuration.
+        /// Every new buffer changes only one value of one button/axis. Joystick object have to remember all previous values.
+        /// </summary>
+        public void DetectChange(byte[] buff)
+        {
+            // If configuration
+            if (checkBit(buff[6], (byte)MODE.CONFIGURATION))
+            {
+                if (checkBit(buff[6], (byte)TYPE.AXIS))
+                {
+                    // Axis configuration, read address and register axis
+                    byte key = (byte)buff[7];
+                    if (!Axis.ContainsKey(key))
+                    {
+                        Axis.Add(key, 0);
+                        return;
+                    }
+                }
+                else if (checkBit(buff[6], (byte)TYPE.BUTTON))
+                {
+                    // Button configuration, read address and register button
+                    byte key = (byte)buff[7];
+                    if (!Button.ContainsKey(key))
+                    {
+                        Button.Add((byte)buff[7], false);
+                        return;
+                    }
+                }
+            }
+
+            // If new button/axis value
+            if (checkBit(buff[6], (byte)TYPE.AXIS))
+            {
+                // Axis value, decode U2 and save to Axis dictionary.
+                short value = BitConverter.ToInt16(new byte[2] { buff[4], buff[5] }, 0);
+                Axis[(byte)buff[7]] = value;
+                return;
+            }
+            else if (checkBit(buff[6], (byte)TYPE.BUTTON))
+            {
+                // Bytton value, decode value and save to Button dictionary.
+                Button[(byte)buff[7]] = buff[4] == (byte)STATE.PRESSED;
+                return;
+            }
+        }
+
+        /// <summary>
+        /// Checks if bits that are set in flag are set in value.
+        /// </summary>
+        bool checkBit(byte value, byte flag)
+        {
+            byte c = (byte)(value & flag);
+            return c == (byte)flag;
+        }
+    }
+
+    public class JoystickState
+    {
+        public int X;
+        public int Y;
+        public int Z;
+        public int RotationX;
+        public int RotationY;
+        public int RotationZ;
+        public List<bool> buttons;
+
+        public JoystickState()
+        {
+            buttons = new List<bool>();
+        }
+        public List<bool> GetButtons()
+        {
+            return buttons;
+        }
     }
 }
