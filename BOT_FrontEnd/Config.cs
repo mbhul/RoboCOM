@@ -87,6 +87,18 @@ namespace BOT_FrontEnd
             }
         }
 
+        public String SelectNode(String argStr)
+        {
+            String selectString = "";
+            try
+            {
+                selectString = configXML.SelectNodes(argStr).Item(0).InnerXml;
+            }
+            catch { }
+            
+            return selectString;
+        }
+
         public void GetDefaultConfig()
         {
             XmlNode cNode = configXML.SelectNodes("//Controller[@GUID='Default']").Item(0);

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.IO;
@@ -17,7 +18,7 @@ namespace BOT_FrontEnd
     {
         //const float SPEED = 25; //mm/s
         //Maximum number of command lines to maintain in the rich text box for history. 
-        const int MAX_CMD_LINES = 10000;
+        const int MAX_CMD_LINES = 15; //10000;
 
         private Controller controller;
 
@@ -30,8 +31,14 @@ namespace BOT_FrontEnd
         //private Tuple<Keys, bool>[6];
         private Dictionary<Keys, bool> InputKeys;
         
-
         private Config ctlConfig;
+        private bool isDocked = false;
+
+        ProcessStartInfo vidLinkPy = new ProcessStartInfo();
+        Process vidLinkProc;
+
+        [DllImport("User32.dll")]
+        static extern int SetForegroundWindow(IntPtr point);
 
         public Form1()
         {
@@ -288,7 +295,7 @@ namespace BOT_FrontEnd
             }
             else //else open the COM port
             {
-                MyVCOM.PortName = "COM" + PortNumber.SelectedItem.ToString();
+                MyVCOM.PortName = PortNumber.SelectedItem.ToString();
                 MyVCOM.BaudRate = Convert.ToInt32(BaudSelect.Text);
                 MyVCOM.DtrEnable = true;
 
@@ -301,7 +308,9 @@ namespace BOT_FrontEnd
                     ConnStatusLbl.ForeColor = Color.Green;
                 }
                 catch (Exception ex)
-                { }
+                {
+                    throw (ex);
+                }
 
                 if (MyVCOM.IsOpen)
                 {
@@ -327,6 +336,13 @@ namespace BOT_FrontEnd
             double x_def, y_def, z_def, a_def, b_def;
             double z_gain;
             bool z_centered = true;
+
+            //If controller selection drop-down is active, then temporarily disable the function until
+            // the selected controller is confirmed
+            if (ControllerSelect.DroppedDown)
+            {
+                return;
+            }
 
             //Store configuration values for later use
             z_fs = (double)ctlConfig.channel_config[(int)ChannelNumber.CH1].MAX -
@@ -583,7 +599,6 @@ namespace BOT_FrontEnd
                     }
                 }
                 #endregion
-                ScrollToEnd(InComTxt);
 
                 command_prev = cmd;
             }
@@ -628,7 +643,6 @@ namespace BOT_FrontEnd
                     System.Action a = new System.Action(() =>
                     {
                         OutComTxt.Text += temp;
-                        ScrollToEnd(OutComTxt);
                     });
                     this.BeginInvoke(a);
 
@@ -703,6 +717,19 @@ namespace BOT_FrontEnd
          * Description:     
          ********************************************************************************/
         private void ControllerSelect_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if(SendTimer.Enabled == false)
+            {
+                getControllerConfiguration();
+            }
+        }
+
+        private void ControllerSelect_SelectionCommited(object sender, EventArgs e)
+        {
+            getControllerConfiguration();
+        }
+
+        private void getControllerConfiguration()
         {
             if ((String)ControllerSelect.SelectedItem == "Keyboard")
             {
@@ -889,9 +916,20 @@ namespace BOT_FrontEnd
         {
             if(InComTxt.Lines.Count() > MAX_CMD_LINES)
             {
-                InComTxt.Select(0, InComTxt.GetFirstCharIndexFromLine(1));
-                InComTxt.SelectedText = "";
+                //InComTxt.Select(0, InComTxt.GetFirstCharIndexFromLine(1));
+                //InComTxt.SelectedText = "";
+                var lines = this.InComTxt.Lines;
+                var newLines = lines.Skip(1);
+                this.InComTxt.Lines = newLines.ToArray();
+                InComTxt.SelectionStart = InComTxt.TextLength;
             }
+            
+            if (!InComTxt.Focused)
+            {
+                InComTxt.Focus();
+            }
+
+            this.InComTxt.ScrollToCaret();
         }
 
         /********************************************************************************
@@ -903,9 +941,14 @@ namespace BOT_FrontEnd
         {
             if (OutComTxt.Lines.Count() > MAX_CMD_LINES)
             {
-                OutComTxt.Select(0, OutComTxt.GetFirstCharIndexFromLine(1));
-                OutComTxt.SelectedText = "";
+                //OutComTxt.Select(0, OutComTxt.GetFirstCharIndexFromLine(1));
+                //OutComTxt.SelectedText = "";
+                var lines = this.OutComTxt.Lines;
+                var newLines = lines.Skip(1);
+                this.OutComTxt.Lines = newLines.ToArray();
+                OutComTxt.SelectionStart = OutComTxt.TextLength;
             }
+            this.OutComTxt.ScrollToCaret();
         }
 
         /********************************************************************************
@@ -929,6 +972,7 @@ namespace BOT_FrontEnd
                 ctlConfig.SaveToFile("Config.xml", controller);
             }
 
+            controller.RestartController();
             configPanel.Dispose();
             StartControllerInput();
         }
@@ -1002,6 +1046,88 @@ namespace BOT_FrontEnd
                     break;
                 default:
                     break;
+            }
+        }
+
+        /********************************************************************************
+         * EVENT HANDLER:   BtnPlane_Click
+         * Description:     Handler for the RC plane button. Essentially a built-in mode
+         *                  for the RC ground station project.
+         ********************************************************************************/
+        private void BtnPlane_Click(object sender, EventArgs e)
+        {
+            Rectangle thisScreen;
+            int x, y;
+            String pyPath;
+
+            thisScreen = Screen.FromControl(this).Bounds;
+
+            //Dock the window at the bottom of the screen to leave room for the video downlink above
+            if (isDocked)
+            {
+                //If already docked, then reset the form to default size and position
+                this.Height = 522;
+                this.FormBorderStyle = FormBorderStyle.Sizable;
+                this.btnPlane.BackColor = SystemColors.Control;
+
+                this.StartPosition = FormStartPosition.CenterScreen;
+                x = (thisScreen.Width - this.Width) / 2;
+                y = (thisScreen.Height - this.Height) / 2;
+
+                //If the downlink script is still active, then close it
+                if (vidLinkProc != null && !vidLinkProc.HasExited)
+                {
+                    IntPtr h = vidLinkProc.MainWindowHandle;
+                    SetForegroundWindow(h);
+                    SendKeys.SendWait("q");
+                }
+
+                vidLinkProc.Close();
+                vidLinkProc.Dispose();
+                vidLinkProc = null;
+            }
+            else
+            {
+                this.Height = 300;
+                this.FormBorderStyle = FormBorderStyle.FixedSingle;
+                this.radioPad.Checked = true;
+                this.btnPlane.BackColor = SystemColors.MenuHighlight;
+
+                this.StartPosition = FormStartPosition.Manual;
+                x = (thisScreen.Width - this.Width) / 2;
+                y = thisScreen.Height - 300;
+
+                pyPath = Path.Combine(this.ctlConfig.SelectNode("//PythonPath"), "python.exe");
+
+                vidLinkPy.FileName = pyPath;
+                vidLinkPy.Arguments = "RCVideoDownlink.py"; // string.Format("{ 0} {1}", cmd, args);
+                vidLinkPy.UseShellExecute = false;
+                //vidLinkPy.RedirectStandardOutput = true;
+                vidLinkPy.RedirectStandardInput = true;
+
+                vidLinkProc = Process.Start(vidLinkPy);
+            }
+
+            this.Location = new Point(x, y);
+            this.TopMost = true;
+            isDocked = !isDocked;
+        }
+
+        /********************************************************************************
+         * EVENT HANDLER:   OnClosed
+         * Description:     Main form closed event handler. Used to kill the video downlink
+         *                  python process if it's still alive
+         ********************************************************************************/
+        protected override void OnClosed(EventArgs e)
+        {
+            if (vidLinkProc != null)
+            {
+                IntPtr h = vidLinkProc.MainWindowHandle;
+                SetForegroundWindow(h);
+                SendKeys.SendWait("q");
+
+                vidLinkProc.Close();
+                vidLinkProc.Dispose();
             }
         }
     }

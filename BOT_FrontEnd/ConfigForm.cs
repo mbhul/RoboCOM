@@ -24,7 +24,7 @@ namespace BOT_FrontEnd
         private long full_scale;
 
         private Controller activeController;
-        private ChannelNumber activeChannel;
+        private ChannelNumber activeChannel = ChannelNumber.NUM_CHANNELS;
         private ControllerProperty activeInput;
         private bool inputSelected = false;
         private bool inputInverted = false;
@@ -90,46 +90,86 @@ namespace BOT_FrontEnd
         private void btnCH1_Click(object sender, EventArgs e)
         {
             inputSelected = false;
-            activeChannel = ChannelNumber.CH1;
-            label1.BackColor = Color.Blue;
-            UpdatePreviousState();
-            StartControllerInput();
+            UpdateInputLabels();
+            if(activeChannel == ChannelNumber.CH1)
+            {
+                StopControllerInput();
+            }
+            else
+            {
+                activeChannel = ChannelNumber.CH1;
+                label1.BackColor = Color.Blue;
+                UpdatePreviousState();
+                StartControllerInput();
+            } 
         }
 
         private void btnCH2_Click(object sender, EventArgs e)
         {
             inputSelected = false;
-            activeChannel = ChannelNumber.CH2;
-            label2.BackColor = Color.Blue;
-            UpdatePreviousState();
-            StartControllerInput();
+            UpdateInputLabels();
+            if (activeChannel == ChannelNumber.CH2)
+            {
+                StopControllerInput();
+            }
+            else
+            {
+                activeChannel = ChannelNumber.CH2;
+                label2.BackColor = Color.Blue;
+                UpdatePreviousState();
+                StartControllerInput();
+            }
         }
 
         private void btnCH3_Click(object sender, EventArgs e)
         {
             inputSelected = false;
-            activeChannel = ChannelNumber.CH3;
-            label3.BackColor = Color.Blue;
-            UpdatePreviousState();
-            StartControllerInput();
+            UpdateInputLabels();
+            if (activeChannel == ChannelNumber.CH3)
+            {
+                StopControllerInput();
+            }
+            else
+            {
+                activeChannel = ChannelNumber.CH3;
+                label3.BackColor = Color.Blue;
+                UpdatePreviousState();
+                StartControllerInput();
+            }
         }
 
         private void btnCH4_Click(object sender, EventArgs e)
         {
             inputSelected = false;
-            activeChannel = ChannelNumber.CH4;
-            label4.BackColor = Color.Blue;
-            UpdatePreviousState();
-            StartControllerInput();
+            UpdateInputLabels();
+            if (activeChannel == ChannelNumber.CH4)
+            {
+                StopControllerInput();
+            }
+            else
+            {
+                activeChannel = ChannelNumber.CH4;
+                label4.BackColor = Color.Blue;
+                UpdatePreviousState();
+                StartControllerInput();
+            }
         }
 
         private void btnCH5_Click(object sender, EventArgs e)
         {
             inputSelected = false;
-            activeChannel = ChannelNumber.CH5;
-            label5.BackColor = Color.Blue;
-            UpdatePreviousState();
-            StartControllerInput();
+            UpdateInputLabels();
+            if (activeChannel == ChannelNumber.CH5)
+            {
+                StopControllerInput();
+            }
+            else
+            {
+                activeChannel = ChannelNumber.CH5;
+                label5.BackColor = Color.Blue;
+                UpdatePreviousState();
+                StartControllerInput();
+            }
         }
 
         /********************************************************************************
@@ -139,13 +179,11 @@ namespace BOT_FrontEnd
          ********************************************************************************/
         private void StartControllerInput()
         {
-            while (ControllerPoller.IsBusy)
+            if (!ControllerPoller.IsBusy)
             {
-                ControllerPoller.CancelAsync();
-                System.Threading.Thread.Sleep(10);
+                ControllerPoller.RunWorkerAsync();
+                System.Threading.Thread.Sleep(50);
             }
-            ControllerPoller.RunWorkerAsync();
-            System.Threading.Thread.Sleep(50);
         }
 
         /********************************************************************************
@@ -252,6 +290,7 @@ namespace BOT_FrontEnd
         private void ControllerPoller_DoWork(object sender, DoWorkEventArgs e)
         {
             BackgroundWorker worker = sender as BackgroundWorker;
+            activeController.RestartController();
 
             while (!inputSelected)
             {
@@ -280,6 +319,7 @@ namespace BOT_FrontEnd
         private void ControllerPoller_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             UpdateInputLabels();
+            activeController.RestartController();
 
             if (e.Error != null)
             {
@@ -303,9 +343,9 @@ namespace BOT_FrontEnd
             buttons = state.GetButtons().ToArray();
             inputInverted = false;
 
-            for (int i = 0; i < (int)ControllerProperty.NUM_BUTTONS; i++)
+            for (int i = 0; i < buttons.Count(); i++)
             {
-                if(buttons[i] == true)
+                if(buttons[i] == true && i < (int)ControllerProperty.NUM_BUTTONS)
                 {
                     activeInput = (ControllerProperty)(ControllerProperty.Button_1 + i);
                     inputSelected = true;

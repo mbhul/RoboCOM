@@ -37,6 +37,7 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.OutComTxt = new System.Windows.Forms.RichTextBox();
             this.OutComLbl = new System.Windows.Forms.Label();
             this.OpenFileDlg = new System.Windows.Forms.OpenFileDialog();
@@ -82,6 +83,7 @@
             this.label2 = new System.Windows.Forms.Label();
             this.InComLbl = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
+            this.btnPlane = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.PadInPanel.SuspendLayout();
             this.groupBox3.SuspendLayout();
@@ -333,6 +335,7 @@
             this.ControllerSelect.Size = new System.Drawing.Size(226, 21);
             this.ControllerSelect.TabIndex = 0;
             this.ControllerSelect.SelectedIndexChanged += new System.EventHandler(this.ControllerSelect_SelectedIndexChanged);
+            this.ControllerSelect.SelectionChangeCommitted += new System.EventHandler(this.ControllerSelect_SelectionCommited);
             // 
             // tableLayoutPanel1
             // 
@@ -346,7 +349,7 @@
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 1;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 262F));
             this.tableLayoutPanel1.Size = new System.Drawing.Size(701, 483);
             this.tableLayoutPanel1.TabIndex = 22;
             // 
@@ -405,6 +408,7 @@
             // 
             // panel1
             // 
+            this.panel1.Controls.Add(this.btnPlane);
             this.panel1.Controls.Add(this.InComTxt);
             this.panel1.Controls.Add(this.PadXY_View);
             this.panel1.Controls.Add(this.PadZ_View);
@@ -424,9 +428,9 @@
             this.InComTxt.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.InComTxt.Location = new System.Drawing.Point(5, 85);
+            this.InComTxt.Location = new System.Drawing.Point(5, 90);
             this.InComTxt.Name = "InComTxt";
-            this.InComTxt.Size = new System.Drawing.Size(431, 383);
+            this.InComTxt.Size = new System.Drawing.Size(431, 378);
             this.InComTxt.TabIndex = 12;
             this.InComTxt.Text = "";
             this.InComTxt.TextChanged += new System.EventHandler(this.InComTxt_TextChanged);
@@ -592,6 +596,17 @@
             this.label1.TabIndex = 17;
             this.label1.Text = "X";
             // 
+            // btnPlane
+            // 
+            this.btnPlane.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnPlane.Image = ((System.Drawing.Image)(resources.GetObject("btnPlane.Image")));
+            this.btnPlane.Location = new System.Drawing.Point(393, 61);
+            this.btnPlane.Name = "btnPlane";
+            this.btnPlane.Size = new System.Drawing.Size(43, 27);
+            this.btnPlane.TabIndex = 22;
+            this.btnPlane.UseVisualStyleBackColor = true;
+            this.btnPlane.Click += new System.EventHandler(this.BtnPlane_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -673,6 +688,7 @@
         private System.Windows.Forms.ComboBox PortNumber;
         private System.Windows.Forms.CheckBox chkRepeat;
         private System.Windows.Forms.Button btnCtlSettings;
+        private System.Windows.Forms.Button btnPlane;
     }
 }
 
