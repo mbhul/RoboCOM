@@ -84,7 +84,7 @@ namespace BOT_FrontEnd
          ********************************************************************************/
         public void Poll()
         {
-            if(currentDevice != null && deviceState != null)
+            if(currentDevice != null)
             {
                 currentDevice.Poll();
                 deviceState = currentDevice.GetCurrentState();
