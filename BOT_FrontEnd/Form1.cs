@@ -40,7 +40,7 @@ namespace BOT_FrontEnd
         [DllImport("User32.dll")]
         static extern int SetForegroundWindow(IntPtr point);
 
-        public Form1()
+        public Form1(ref SplashScreen sc)
         {
             try
             {
@@ -94,6 +94,8 @@ namespace BOT_FrontEnd
                 }
             }
 
+            System.Threading.Thread.Sleep(2000);
+            sc.Close();
         }
 
         private void Form_Load(object sender, EventArgs e)
@@ -885,6 +887,7 @@ namespace BOT_FrontEnd
             }
         }
 
+        //Only works on Windows. 
         [DllImport("User32.dll", CharSet = CharSet.Auto, EntryPoint = "SendMessage")]
         static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
 
@@ -958,13 +961,10 @@ namespace BOT_FrontEnd
         private void btnCtlSettings_Click(object sender, EventArgs e)
         {
             ConfigForm configPanel = new ConfigForm(ref this.controller, ref this.ctlConfig);
-            Form testform = new Form();
-
             StopControllerInput();
 
             var result = configPanel.ShowDialog(this);
-            //var result = testform.ShowDialog(this);
-
+			
             if (result == System.Windows.Forms.DialogResult.OK)
             {
                 controller.SetChannelMapping(configPanel.ChannelMapping, configPanel.ChannelInverted);
@@ -1021,14 +1021,6 @@ namespace BOT_FrontEnd
             }
         }
 
-        private void Form_KeyPress(object sender, KeyPressEventArgs e)
-        {
-            //if (this.radioPad.Checked)
-            //{
-            //    e.Handled = true;
-            //}
-        }
-
         /********************************************************************************
          * EVENT HANDLER:   Form_PreviewKeyDown
          * Description:     Default handler for all controls' PreviewKeyDown event
@@ -1070,6 +1062,7 @@ namespace BOT_FrontEnd
                 this.FormBorderStyle = FormBorderStyle.Sizable;
                 this.btnPlane.BackColor = SystemColors.Control;
 
+                //Set the form in the centre of the screen
                 this.StartPosition = FormStartPosition.CenterScreen;
                 x = (thisScreen.Width - this.Width) / 2;
                 y = (thisScreen.Height - this.Height) / 2;
@@ -1077,8 +1070,12 @@ namespace BOT_FrontEnd
                 //If the downlink script is still active, then close it
                 if (vidLinkProc != null && !vidLinkProc.HasExited)
                 {
-                    IntPtr h = vidLinkProc.MainWindowHandle;
-                    SetForegroundWindow(h);
+                    //Obviously user32 Pinvokes won't work on Linux
+                    if (!IsLinux)
+                    {
+                        IntPtr h = vidLinkProc.MainWindowHandle;
+                        SetForegroundWindow(h);
+                    }
                     SendKeys.SendWait("q");
                 }
 
@@ -1088,7 +1085,18 @@ namespace BOT_FrontEnd
             }
             else
             {
-                this.Height = 300;
+                //The way screen resolution is interpretted seems to be slightly different in Mono
+                // the difference below was determined empirically on my Pi3 running Raspbian
+                if(IsLinux)
+                {
+                    this.Height = 290;
+                }
+                else
+                {
+                    this.Height = 300;
+                }
+                //After re-sizing the form, set it at the bottom of the screen 
+                // and make it not manually resizable
                 this.FormBorderStyle = FormBorderStyle.FixedSingle;
                 this.radioPad.Checked = true;
                 this.btnPlane.BackColor = SystemColors.MenuHighlight;
@@ -1097,12 +1105,11 @@ namespace BOT_FrontEnd
                 x = (thisScreen.Width - this.Width) / 2;
                 y = thisScreen.Height - 300;
 
-                pyPath = Path.Combine(this.ctlConfig.SelectNode("//PythonPath"), "python.exe");
-
+                //Run the video downlink python script
+                pyPath = this.ctlConfig.SelectNode("//PythonPath");
                 vidLinkPy.FileName = pyPath;
-                vidLinkPy.Arguments = "RCVideoDownlink.py"; // string.Format("{ 0} {1}", cmd, args);
+                vidLinkPy.Arguments = "RCVideoDownlink.py";
                 vidLinkPy.UseShellExecute = false;
-                //vidLinkPy.RedirectStandardOutput = true;
                 vidLinkPy.RedirectStandardInput = true;
 
                 vidLinkProc = Process.Start(vidLinkPy);
@@ -1123,11 +1130,26 @@ namespace BOT_FrontEnd
             if (vidLinkProc != null)
             {
                 IntPtr h = vidLinkProc.MainWindowHandle;
-                SetForegroundWindow(h);
-                SendKeys.SendWait("q");
 
+                //Unfortunately I can't find a way to force the process to have focus on Linux
+                // in a way similar to the user32 SetForegroundWindow method. 
+                if (!IsLinux)
+                {
+                    SetForegroundWindow(h);
+                }
+                SendKeys.SendWait("q");
+                 
                 vidLinkProc.Close();
                 vidLinkProc.Dispose();
+            }
+        }
+
+        public static bool IsLinux
+        {
+            get
+            {
+                int p = (int)Environment.OSVersion.Platform;
+                return (p == 4) || (p == 6) || (p == 128);
             }
         }
     }

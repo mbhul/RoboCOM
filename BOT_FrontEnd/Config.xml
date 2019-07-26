@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <BotConfig>
-  <PythonPath >C:\Users\Mike\AppData\Local\Programs\Python\Python37-32</PythonPath>
+  <PythonPath >C:\Users\Mike\AppData\Local\Programs\Python\Python37-32\python.exe</PythonPath>
   <Controller GUID="Default">
     <StartOfFrame type="absolute" enable="true"></StartOfFrame>
     <StartOfFrame type="relative" enable="true"></StartOfFrame>

@@ -68,6 +68,7 @@
             this.SaveFileBtn = new System.Windows.Forms.Button();
             this.OpenFileBtn = new System.Windows.Forms.Button();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.btnPlane = new System.Windows.Forms.Button();
             this.InComTxt = new System.Windows.Forms.RichTextBox();
             this.PadXY_View = new System.Windows.Forms.PictureBox();
             this.PadZ_View = new System.Windows.Forms.PictureBox();
@@ -83,7 +84,6 @@
             this.label2 = new System.Windows.Forms.Label();
             this.InComLbl = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
-            this.btnPlane = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.PadInPanel.SuspendLayout();
             this.groupBox3.SuspendLayout();
@@ -423,6 +423,17 @@
             this.panel1.Size = new System.Drawing.Size(439, 477);
             this.panel1.TabIndex = 23;
             // 
+            // btnPlane
+            // 
+            this.btnPlane.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnPlane.Image = ((System.Drawing.Image)(resources.GetObject("btnPlane.Image")));
+            this.btnPlane.Location = new System.Drawing.Point(393, 61);
+            this.btnPlane.Name = "btnPlane";
+            this.btnPlane.Size = new System.Drawing.Size(43, 27);
+            this.btnPlane.TabIndex = 22;
+            this.btnPlane.UseVisualStyleBackColor = true;
+            this.btnPlane.Click += new System.EventHandler(this.BtnPlane_Click);
+            // 
             // InComTxt
             // 
             this.InComTxt.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
@@ -596,17 +607,6 @@
             this.label1.TabIndex = 17;
             this.label1.Text = "X";
             // 
-            // btnPlane
-            // 
-            this.btnPlane.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnPlane.Image = ((System.Drawing.Image)(resources.GetObject("btnPlane.Image")));
-            this.btnPlane.Location = new System.Drawing.Point(393, 61);
-            this.btnPlane.Name = "btnPlane";
-            this.btnPlane.Size = new System.Drawing.Size(43, 27);
-            this.btnPlane.TabIndex = 22;
-            this.btnPlane.UseVisualStyleBackColor = true;
-            this.btnPlane.Click += new System.EventHandler(this.BtnPlane_Click);
-            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -615,10 +615,10 @@
             this.Controls.Add(this.tableLayoutPanel1);
             this.KeyPreview = true;
             this.Name = "Form1";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "BOT COM";
             this.Load += new System.EventHandler(this.Form_Load);
             this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.Form_KeyDown);
-            this.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.Form_KeyPress);
             this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.Form_KeyUp);
             this.PreviewKeyDown += new System.Windows.Forms.PreviewKeyDownEventHandler(this.Form_PreviewKeyDown);
             this.groupBox1.ResumeLayout(false);
