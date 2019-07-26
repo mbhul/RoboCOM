@@ -1,11 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.Linq;
-using System.Text;
 using System.Windows.Forms;
+
+#if _WINDOWS
+using SlimDX.DirectInput;
+#endif
 
 namespace BOT_FrontEnd
 {
@@ -30,10 +31,16 @@ namespace BOT_FrontEnd
         private bool inputInverted = false;
 
         public ConfigForm(ref Controller ctl, ref Config cfg)
-        {            
+        {
+#if _WINDOWS
+            DeviceInstance di = ctl.getCurrentDeviceInstance();
+#endif
+            
             InitializeComponent();
             activeController = ctl;
+#if !_WINDOWS
             activeController.RestartController();
+#endif
             activeConfig = cfg;
             activeController.Poll();
             full_scale = activeController.getFS();
@@ -262,7 +269,6 @@ namespace BOT_FrontEnd
         private void StopControllerInput()
         {
             ControllerPoller.CancelAsync();
-            System.Threading.Thread.Sleep(50);
         }
 
         /********************************************************************************
@@ -290,7 +296,9 @@ namespace BOT_FrontEnd
         private void ControllerPoller_DoWork(object sender, DoWorkEventArgs e)
         {
             BackgroundWorker worker = sender as BackgroundWorker;
+#if !_WINDOWS
             activeController.RestartController();
+#endif
 
             while (!inputSelected)
             {
@@ -319,7 +327,10 @@ namespace BOT_FrontEnd
         private void ControllerPoller_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             UpdateInputLabels();
+
+#if !_WINDOWS
             activeController.RestartController();
+#endif
 
             if (e.Error != null)
             {
@@ -343,9 +354,9 @@ namespace BOT_FrontEnd
             buttons = state.GetButtons().ToArray();
             inputInverted = false;
 
-            for (int i = 0; i < buttons.Count(); i++)
+            for (int i = 0; i < (int)ControllerProperty.NUM_BUTTONS; i++)
             {
-                if(buttons[i] == true && i < (int)ControllerProperty.NUM_BUTTONS)
+                if(buttons[i] == true)
                 {
                     activeInput = (ControllerProperty)(ControllerProperty.Button_1 + i);
                     inputSelected = true;

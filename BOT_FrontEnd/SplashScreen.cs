@@ -14,6 +14,8 @@ namespace BOT_FrontEnd
         public SplashScreen()
         {
             InitializeComponent();
+            this.label1.Parent = this.pictureBox1;
+            this.label1.BackColor = Color.Transparent;
         }
     }
 }

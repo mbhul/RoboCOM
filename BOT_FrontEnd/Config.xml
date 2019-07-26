@@ -14,5 +14,17 @@
     <ChannelSeparator>,</ChannelSeparator>
     <StopCommand enable="true">1000,1500,1500,1500;</StopCommand>
   </Controller>
-  <!--TODO: Update configuration to save specific configs for specific controllers -->
+  <Controller GUID="b1b25990-771d-11e4-8001-444553540000">
+    <StartOfFrame type="absolute" enable="true"></StartOfFrame>
+    <StartOfFrame type="relative" enable="true"></StartOfFrame>
+    <OutputChannels>
+      <Channel param="CH1" enable="true" default="1000" precision="0000" min="1000" max="2000" map="7" persist="true" accum="true" gain="0.1"></Channel>
+      <Channel param="CH2" enable="true" default="1500" precision="0000" min="1000" max="2000" map="8" gain="0.025"></Channel>
+      <Channel param="CH3" enable="true" default="1500" precision="0000" min="1000" max="2000" map="11" gain="0.025"></Channel>
+      <Channel param="CH4" enable="true" default="1500" precision="0000" min="1000" max="2000" map="9" gain="0.025"></Channel>
+      <Channel param="CH5" enable="true" default="1500" precision="0000" min="1000" max="2000" map="10" gain="0.025"></Channel>
+    </OutputChannels>
+    <ChannelSeparator>,</ChannelSeparator>
+    <StopCommand enable="true">1000,1500,1500,1500;</StopCommand>
+  </Controller>
 </BotConfig>

@@ -8,9 +8,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("BOT_FrontEnd")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("UW")]
+[assembly: AssemblyCompany("Flancrest Enterprises")]
 [assembly: AssemblyProduct("BOT_FrontEnd")]
-[assembly: AssemblyCopyright("Copyright © UW 2012")]
+[assembly: AssemblyCopyright("Copyright © Mike Hul 2019")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

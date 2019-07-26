@@ -10,19 +10,27 @@ using System.IO;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
-using System.Xml;
+
+#if _WINDOWS
+using SlimDX.DirectInput;
+#endif
 
 namespace BOT_FrontEnd
 {
     public partial class Form1 : Form
     {
-        //const float SPEED = 25; //mm/s
-        //Maximum number of command lines to maintain in the rich text box for history. 
-        const int MAX_CMD_LINES = 15; //10000;
 
+        //Maximum number of command lines to maintain in the rich text box for history. 
+        const int MAX_CMD_LINES = 15;
         private Controller controller;
 
+#if _WINDOWS
+        private DirectInput DI;
+        private List<Guid> connected_controllers;
+#else
         private List<string> connected_controllers;
+#endif
+
         private bool sent_stop;
         private bool PauseTransfer;
         private double z_value;
@@ -30,7 +38,6 @@ namespace BOT_FrontEnd
 
         //private Tuple<Keys, bool>[6];
         private Dictionary<Keys, bool> InputKeys;
-        
         private Config ctlConfig;
         private bool isDocked = false;
 
@@ -46,7 +53,6 @@ namespace BOT_FrontEnd
             {
                 //Initialize and set defaults
                 InitializeComponent();
-
                 bold_font = new Font(InComTxt.Font, FontStyle.Bold);
                 BaudSelect.SelectedIndex = 2;
                 sent_stop = true;
@@ -76,6 +82,10 @@ namespace BOT_FrontEnd
                 InputKeys.Add(Keys.Right, false);
                 InputKeys.Add(Keys.W, false);
                 InputKeys.Add(Keys.S, false);
+
+#if _WINDOWS
+                DI = new DirectInput();
+#endif
 
                 //Add the PreviewKeyDown event handler to every control on the form
                 Control[] ctls = GetAll(this).ToArray<Control>();
@@ -159,9 +169,43 @@ namespace BOT_FrontEnd
          * Description: Find all connected DirectX compatible input devices and populate the dropdown list
          * Parameters:  N/A
          ********************************************************************************/
+#if _WINDOWS
         private void getConnectedControllers()
         {
             ControllerSelect.Items.Clear(); 
+            controller = new Controller(this.Handle);
+            connected_controllers = new List<Guid>();
+
+            //Create the worker thread that will poll the selected controller for its current state
+            ControllerPoller.WorkerSupportsCancellation = true;
+            ControllerPoller.DoWork += new DoWorkEventHandler(ControllerPoller_DoWork);
+            ControllerPoller.RunWorkerCompleted += new RunWorkerCompletedEventHandler(ControllerPoller_RunWorkerCompleted);
+
+            //Get the list of connected controllers (we want to use the gamepad so specify GameControl device type)
+            IList<DeviceInstance> ControllerList = DI.GetDevices(DeviceType.Gamepad, DeviceEnumerationFlags.AttachedOnly);
+
+            foreach (DeviceInstance dev in DI.GetDevices(DeviceType.Joystick, DeviceEnumerationFlags.AttachedOnly))
+            {
+                ControllerList.Add(dev);
+            }
+
+            if (ControllerList.Count > 0)
+            {
+                foreach (DeviceInstance deviceInstance in ControllerList)
+                {
+                    ControllerSelect.Items.Add(deviceInstance.InstanceName);
+                    connected_controllers.Add(deviceInstance.InstanceGuid);
+                }
+            }
+
+            //add the keyboard at the end
+            ControllerSelect.Items.Add("Keyboard");
+            connected_controllers.Add(new Guid());
+        }
+#else
+        private void getConnectedControllers()
+        {
+            ControllerSelect.Items.Clear();
             controller = new Controller(this.Handle);
             connected_controllers = new List<string>();
 
@@ -179,10 +223,6 @@ namespace BOT_FrontEnd
                 {
                     foreach (string fname in devFiles)
                     {
-                        //Debug on PI
-                        //InComTxt.AppendText(fname + "\r\n");
-                        //InComTxt.AppendText(Regex.Match(fname, "js[0-9]*").Value);
-
                         if (Regex.Match(fname, "js[0-9]*").Success)
                         {
                             ControllerSelect.Items.Add(fname);
@@ -200,6 +240,7 @@ namespace BOT_FrontEnd
             ControllerSelect.Items.Add("Keyboard");
             connected_controllers.Add("Keyboard");
         }
+#endif
 
         /********************************************************************************
          * EVENT HANDLER:   OpenFileBtn_Click
@@ -297,7 +338,15 @@ namespace BOT_FrontEnd
             }
             else //else open the COM port
             {
-                MyVCOM.PortName = PortNumber.SelectedItem.ToString();
+                if (IsLinux)
+                {
+                    MyVCOM.PortName = PortNumber.SelectedItem.ToString();
+                }
+                else
+                {
+                    MyVCOM.PortName = "COM" + PortNumber.SelectedItem.ToString();
+                }
+                
                 MyVCOM.BaudRate = Convert.ToInt32(BaudSelect.Text);
                 MyVCOM.DtrEnable = true;
 
@@ -395,8 +444,13 @@ namespace BOT_FrontEnd
             if (radioPad.Checked)
             {
                 string cmd = "";
+                
+                if(!this.Focused && !IsLinux)
+                {
+                    SetForegroundWindow(this.Handle);
+                }
 
-                #region Keyboard Input Selected
+#region Keyboard Input Selected
                 //if 'Keyboard'(arrow keys) is selected as the current method of input
                 if ((String)ControllerSelect.SelectedItem == "Keyboard")
                 {
@@ -475,13 +529,20 @@ namespace BOT_FrontEnd
                         sent_stop = true;
                     }
                 }
-                #endregion
-                #region DirectX Controller Selected
+#endregion
+#region DirectX Controller Selected
                 else
                 {
                     JoystickState state = controller.getState();
+#if _WINDOWS
+					bool[] buttons = state.GetButtons();
+					int[] pov = state.GetPointOfViewControllers();
+					double angle_A_B = (pov[0] == -1) ? -1 : (pov[0] / 100) * (Math.PI / 180);
+#else
                     bool[] buttons = state.GetButtons().ToArray();
-                    //int[] pov = state.GetPointOfViewControllers();
+					double angle_A_B = 0;
+#endif
+
                     float fs = (float)controller.getFS();
                     bool z_condition = false;
 
@@ -510,8 +571,6 @@ namespace BOT_FrontEnd
                     }
 
                     //**** Convert the values to the configured command scale (in Config.xml) *****//
-                    double angle_A_B = 0; // (pov[0] == -1) ? -1 : (pov[0] / 100) * (Math.PI / 180);
-
                     x = ((float)(x - fs / 2) / fs) * x_fs;
                     x += x_def;
 
@@ -600,7 +659,11 @@ namespace BOT_FrontEnd
                         sent_stop = true;
                     }
                 }
-                #endregion
+#endregion
+                if(!IsLinux)
+                {
+                    ScrollToEnd(InComTxt);
+                }
 
                 command_prev = cmd;
             }
@@ -645,6 +708,10 @@ namespace BOT_FrontEnd
                     System.Action a = new System.Action(() =>
                     {
                         OutComTxt.Text += temp;
+                        if (!IsLinux)
+                        {
+                            ScrollToEnd(OutComTxt);
+                        }
                     });
                     this.BeginInvoke(a);
 
@@ -964,15 +1031,17 @@ namespace BOT_FrontEnd
             StopControllerInput();
 
             var result = configPanel.ShowDialog(this);
-			
-            if (result == System.Windows.Forms.DialogResult.OK)
+
+            if(result == System.Windows.Forms.DialogResult.OK)
             {
                 controller.SetChannelMapping(configPanel.ChannelMapping, configPanel.ChannelInverted);
                 ctlConfig = configPanel.activeConfig;
                 ctlConfig.SaveToFile("Config.xml", controller);
             }
 
+#if !_WINDOWS
             controller.RestartController();
+#endif
             configPanel.Dispose();
             StartControllerInput();
         }
