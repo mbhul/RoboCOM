@@ -10,6 +10,7 @@ using System.IO;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using X11;
 
 #if _WINDOWS
 using SlimDX.DirectInput;
@@ -19,7 +20,7 @@ namespace BOT_FrontEnd
 {
     public partial class Form1 : Form
     {
-
+        
         //Maximum number of command lines to maintain in the rich text box for history. 
         const int MAX_CMD_LINES = 15;
         private Controller controller;
@@ -445,7 +446,7 @@ namespace BOT_FrontEnd
             {
                 string cmd = "";
                 
-                if(!this.Focused && !IsLinux)
+                if(!this.Focused && !IsLinux && vidLinkProc == null)
                 {
                     SetForegroundWindow(this.Handle);
                 }
@@ -1053,6 +1054,7 @@ namespace BOT_FrontEnd
         private void Form_KeyDown(object sender, KeyEventArgs e)
         {
             List<Keys> keysCopy = new List<Keys>(this.InputKeys.Keys);
+            bool keyPressedIsInput = false;
 
             if (this.radioPad.Checked)
             {
@@ -1061,11 +1063,18 @@ namespace BOT_FrontEnd
                     if(e.KeyCode == entry)
                     {
                         InputKeys[entry] = true;
+                        keyPressedIsInput = true;
                     }
                 }
-                e.SuppressKeyPress = true;
-                e.Handled = true;
+
+                if(keyPressedIsInput)
+                {
+                    e.SuppressKeyPress = true;
+                    e.Handled = true;
+                }
             }
+
+            Console.WriteLine("Key {0} intercepted by Form", 'q');
         }
 
         /********************************************************************************
@@ -1075,6 +1084,7 @@ namespace BOT_FrontEnd
         private void Form_KeyUp(object sender, KeyEventArgs e)
         {
             List<Keys> keysCopy = new List<Keys>(this.InputKeys.Keys);
+            bool keyPressedIsInput = false;
 
             if (this.radioPad.Checked)
             {
@@ -1083,10 +1093,15 @@ namespace BOT_FrontEnd
                     if (e.KeyCode == entry)
                     {
                         InputKeys[entry] = false;
+                        keyPressedIsInput = true;
                     }
                 }
-                e.SuppressKeyPress = true;
-                e.Handled = true;
+
+                if (keyPressedIsInput)
+                {
+                    e.SuppressKeyPress = true;
+                    e.Handled = true;
+                }
             }
         }
 
@@ -1120,12 +1135,15 @@ namespace BOT_FrontEnd
             Rectangle thisScreen;
             int x, y;
             String pyPath;
+            bool closeVideo = false;
 
             thisScreen = Screen.FromControl(this).Bounds;
 
             //Dock the window at the bottom of the screen to leave room for the video downlink above
             if (isDocked)
             {
+                this.TopMost = false;
+
                 //If already docked, then reset the form to default size and position
                 this.Height = 522;
                 this.FormBorderStyle = FormBorderStyle.Sizable;
@@ -1136,21 +1154,7 @@ namespace BOT_FrontEnd
                 x = (thisScreen.Width - this.Width) / 2;
                 y = (thisScreen.Height - this.Height) / 2;
 
-                //If the downlink script is still active, then close it
-                if (vidLinkProc != null && !vidLinkProc.HasExited)
-                {
-                    //Obviously user32 Pinvokes won't work on Linux
-                    if (!IsLinux)
-                    {
-                        IntPtr h = vidLinkProc.MainWindowHandle;
-                        SetForegroundWindow(h);
-                    }
-                    SendKeys.SendWait("q");
-                }
-
-                vidLinkProc.Close();
-                vidLinkProc.Dispose();
-                vidLinkProc = null;
+                closeVideo = true;
             }
             else
             {
@@ -1178,15 +1182,66 @@ namespace BOT_FrontEnd
                 pyPath = this.ctlConfig.SelectNode("//PythonPath");
                 vidLinkPy.FileName = pyPath;
                 vidLinkPy.Arguments = "RCVideoDownlink.py";
-                vidLinkPy.UseShellExecute = false;
-                vidLinkPy.RedirectStandardInput = true;
+                vidLinkPy.UseShellExecute = true;
+                vidLinkPy.RedirectStandardInput = false;
 
                 vidLinkProc = Process.Start(vidLinkPy);
+
+                //Keep this form on top of the video feed
+                this.TopMost = true;
             }
 
             this.Location = new Point(x, y);
-            this.TopMost = true;
+
             isDocked = !isDocked;
+
+            if(closeVideo)
+            {
+                //tempTimer.Enabled = true;
+                //tempTimer.Start();
+                CloseVideoDownlink();
+            }
+        }
+
+        private void CloseVideoDownlink()
+        {
+            //If the downlink script is still active, then close it
+            if (vidLinkProc != null)
+            {
+                if(!vidLinkProc.HasExited)
+                {
+                    IntPtr h = vidLinkProc.MainWindowHandle;
+
+                    //Linux code doesn't work :(
+                    if (IsLinux)
+                    {
+                        Console.WriteLine("isLinux == true");
+
+                        if (h != IntPtr.Zero)
+                        {
+                            //X11lib.XRaiseWindow(_display, h);
+                            //X11lib.XSetInputFocus(_display, h, X11lib.TRevertTo.RevertToParent, (TInt)0);
+
+                            //Debug
+                            Console.WriteLine("First window handle was not NULL.");
+                        }
+                        else
+                        {
+                            XSendKeystroke('q', "RCVideo");
+                        }
+                    }
+                    else
+                    {
+                        SetForegroundWindow(h);
+                    }
+
+                    SendKeys.SendWait("q");
+                }
+
+                tempTimer.Interval = 1000;
+                tempTimer.Enabled = true;
+                tempTimer.Start();
+            }
         }
 
         /********************************************************************************
@@ -1196,21 +1251,7 @@ namespace BOT_FrontEnd
          ********************************************************************************/
         protected override void OnClosed(EventArgs e)
         {
-            if (vidLinkProc != null)
-            {
-                IntPtr h = vidLinkProc.MainWindowHandle;
-
-                //Unfortunately I can't find a way to force the process to have focus on Linux
-                // in a way similar to the user32 SetForegroundWindow method. 
-                if (!IsLinux)
-                {
-                    SetForegroundWindow(h);
-                }
-                SendKeys.SendWait("q");
-                 
-                vidLinkProc.Close();
-                vidLinkProc.Dispose();
-            }
+            CloseVideoDownlink();
         }
 
         public static bool IsLinux
@@ -1219,6 +1260,78 @@ namespace BOT_FrontEnd
             {
                 int p = (int)Environment.OSVersion.Platform;
                 return (p == 4) || (p == 6) || (p == 128);
+            }
+        }
+
+        private void XSendKeystroke(char key, string windowTitle)
+        {
+            IntPtr _display = X11lib.XOpenDisplay(String.Empty);
+            IntPtr rootwin = X11lib.XDefaultRootWindow(_display);
+            IntPtr ActiveWindowAtom = X11lib.XInternAtom(_display, "_NET_ACTIVE_WINDOW", false);
+
+            int winIndex = 0;
+            int tempreturn = 0;
+
+            XEvent ev = new XEvent();
+            ev.ClientMessageEvent.type = XEventName.ClientMessage;
+            ev.ClientMessageEvent.message_type = ActiveWindowAtom;
+            ev.ClientMessageEvent.format = 32;
+            ev.ClientMessageEvent.ptr1 = (IntPtr)1U;
+            ev.ClientMessageEvent.ptr2 = (IntPtr)1U;
+            ev.ClientMessageEvent.ptr3 = (IntPtr)0U;
+            ev.ClientMessageEvent.ptr4 = (IntPtr)0U;
+            ev.ClientMessageEvent.ptr5 = (IntPtr)0U;
+
+            XEvent kev = new XEvent();
+            kev.KeyEvent.type = XEventName.KeyPress;
+            kev.KeyEvent.display = _display;
+            kev.KeyEvent.keycode = X11lib.XKeysymToKeycode(_display, 0x0071); //q
+            kev.KeyEvent.root = rootwin;
+            kev.KeyEvent.same_screen = true;
+
+            //Find windows based on title
+            IntPtr[] allWindows = Helpers.FindWindows(_display, windowTitle);
+            if (allWindows.Count() > 0)
+            {
+                X11lib.XSelectInput(_display, allWindows[winIndex], EventMask.KeyPressMask | EventMask.KeyReleaseMask);
+
+                //Raise window to top of stack - works!
+                ev.ClientMessageEvent.window = allWindows[winIndex];
+                tempreturn = (int)X11lib.XSendEvent(_display, rootwin, (TBoolean)0, (TLong)X11.EventMask.SubstructureRedirectMask, ref ev);
+                X11lib.XMapRaised(_display, allWindows[winIndex]);
+
+                //Send key press event - doesn't work :(
+                kev.KeyEvent.window = allWindows[winIndex];
+                tempreturn = (int)X11lib.XSendEvent(_display, allWindows[winIndex], (TBoolean)1, (TLong)X11.EventMask.KeyPressMask, ref kev);
+
+                kev.KeyEvent.type = XEventName.KeyRelease;
+                tempreturn = (int)X11lib.XSendEvent(_display, allWindows[winIndex], (TBoolean)1, (TLong)X11.EventMask.KeyReleaseMask, ref kev);
+                X11lib.XSync(_display, false);
+            }
+            else
+            {
+                Console.WriteLine("No Window found!");
+            }
+
+            X11lib.XCloseDisplay(_display);
+        }
+
+        private void tempTimer_Tick(object sender, EventArgs e)
+        {
+            if(vidLinkProc.HasExited)
+            {
+                vidLinkProc.Close();
+                vidLinkProc.Dispose();
+                vidLinkProc = null;
+                
+                tempTimer.Stop();
+                tempTimer.Enabled = false;
+                Console.WriteLine("vidLinkProc has exited!");
+            }
+            else
+            {
+                XSendKeystroke('q', "RCVideo");
+                SendKeys.SendWait("q");
             }
         }
     }

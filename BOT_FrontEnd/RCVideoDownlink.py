@@ -41,8 +41,8 @@ while(True):
    background[y:y+resized.shape[0], x:x+resized.shape[1]] = resized
 
    if not frame is None:
-      cv2.imshow('frame',background)
-      cv2.moveWindow('frame', 0, 0) #moveWindow('frame', x, y)
+      cv2.imshow('RCVideo',background)
+      cv2.moveWindow('RCVideo', 0, 0) #moveWindow('frame', x, y)
       
    if (cv2.waitKey(1) & 0xff == ord('q')):
       break

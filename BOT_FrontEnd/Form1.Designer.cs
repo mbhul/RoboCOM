@@ -84,6 +84,7 @@
             this.label2 = new System.Windows.Forms.Label();
             this.InComLbl = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
+            this.tempTimer = new System.Windows.Forms.Timer(this.components);
             this.groupBox1.SuspendLayout();
             this.PadInPanel.SuspendLayout();
             this.groupBox3.SuspendLayout();
@@ -607,6 +608,10 @@
             this.label1.TabIndex = 17;
             this.label1.Text = "X";
             // 
+            // tempTimer
+            // 
+            this.tempTimer.Tick += new System.EventHandler(this.tempTimer_Tick);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -689,6 +694,7 @@
         private System.Windows.Forms.CheckBox chkRepeat;
         private System.Windows.Forms.Button btnCtlSettings;
         private System.Windows.Forms.Button btnPlane;
+        private System.Windows.Forms.Timer tempTimer;
     }
 }
 

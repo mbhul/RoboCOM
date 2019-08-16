@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Reflection;
+using X11;
 
 namespace BOT_FrontEnd
 {
@@ -13,6 +14,74 @@ namespace BOT_FrontEnd
 
         public static ControllerProperty[] DefaultJoystick = { ControllerProperty.Z, ControllerProperty.X, ControllerProperty.Y,
                                                               ControllerProperty.Button_0, ControllerProperty.Button_1};
+
+        //****************************************************************************
+        //See: https://stackoverflow.com/questions/42449050/cant-get-a-window-handle
+        //****************************************************************************
+        private static IntPtr[] FindChildWindows(IntPtr display, IntPtr window,
+                                                 string title, ref List<IntPtr> windows)
+        {
+            IntPtr rootWindow;
+            IntPtr parentWindow;
+
+            IntPtr[] childWindows = new IntPtr[0];
+
+            int childWindowsLength;
+
+            X11lib.XQueryTree(display, window,
+                                  out rootWindow, out parentWindow,
+                                  out childWindows, out childWindowsLength);
+
+            childWindows = new IntPtr[childWindowsLength];
+
+            X11lib.XQueryTree(display, window,
+                                  out rootWindow, out parentWindow,
+                                  out childWindows, out childWindowsLength);
+
+            string windowFetchedTitle;
+
+            X11lib.XFetchName(display, window, out windowFetchedTitle);
+
+            if (title == windowFetchedTitle &&
+               !windows.Contains(window))
+            {
+                windows.Add(window);
+            }
+
+            for (int childWindowsIndexer = 0;
+                childWindowsIndexer < childWindows.Length;
+                childWindowsIndexer++)
+            {
+                IntPtr childWindow = childWindows[childWindowsIndexer];
+
+                string childWindowFetchedTitle;
+
+                X11lib.XFetchName(display, childWindow,
+                                      out childWindowFetchedTitle);
+
+                if (title == childWindowFetchedTitle &&
+                   !windows.Contains(childWindow))
+                {
+                    windows.Add(childWindow);
+                }
+
+                FindChildWindows(display, childWindow, title, ref windows);
+            }
+
+            windows.TrimExcess();
+
+            return windows.ToArray();
+        }
+
+        public static IntPtr[] FindWindows(IntPtr display, string title)
+        {
+            List<IntPtr> windows = new List<IntPtr>();
+
+            return FindChildWindows(display,
+                                    X11lib.XDefaultRootWindow(display),
+                                    title,
+                                    ref windows);
+        }
     }
 
     public enum ControllerProperty

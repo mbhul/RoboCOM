@@ -19,7 +19,7 @@ namespace BOT_FrontEnd.Properties {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public class Resources {
@@ -63,12 +63,13 @@ namespace BOT_FrontEnd.Properties {
         /// <summary>
         ///   Looks up a localized string similar to &lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot; ?&gt;
         ///&lt;BotConfig&gt;
-        ///  &lt;StartOfFrame type=&quot;absolute&quot; enable=&quot;true&quot;&gt;G90&lt;/StartOfFrame&gt;
-        ///  &lt;StartOfFrame type=&quot;relative&quot; enable=&quot;true&quot;&gt;G91&lt;/StartOfFrame&gt;
-        ///  &lt;OutputChannels&gt;
-        ///    &lt;Channel param=&quot;CH1&quot; enable=&quot;true&quot; default=&quot;0.0&quot; precision=&quot;00.00&quot; min=&quot;-10&quot; max=&quot;10&quot; persist=&quot;false&quot; gain=&quot;0.1&quot;&gt;Z&lt;/Channel&gt;
-        ///    &lt;Channel param=&quot;CH2&quot; enable=&quot;true&quot; default=&quot;0.0&quot; precision=&quot;00.00&quot; min=&quot;-10&quot; max=&quot;10&quot; gain=&quot;0.025&quot;&gt;X&lt;/Channel&gt;
-        ///    &lt;Channel param=&quot;CH3&quot; enable=&quot;true&quot; default=&quot;0.0&quot; precisi [rest of string was truncated]&quot;;.
+        ///  &lt;PythonPath &gt;C:\Users\Mike\AppData\Local\Programs\Python\Python37-32\python.exe&lt;/PythonPath&gt;
+        ///  &lt;Controller GUID=&quot;Default&quot;&gt;
+        ///    &lt;StartOfFrame type=&quot;absolute&quot; enable=&quot;true&quot;&gt;&lt;/StartOfFrame&gt;
+        ///    &lt;StartOfFrame type=&quot;relative&quot; enable=&quot;true&quot;&gt;&lt;/StartOfFrame&gt;
+        ///    &lt;OutputChannels&gt;
+        ///      &lt;Channel param=&quot;CH1&quot; enable=&quot;true&quot; default=&quot;1000&quot; precision=&quot;0000&quot; min=&quot;1000&quot; max=&quot;2000&quot; map=&quot;-8&quot; persist=&quot;true&quot; accum=&quot;false&quot; gain=&quot;0.1&quot;&gt;&lt;/Channel&gt;
+        ///      &lt;Channel param=&quot;C [rest of string was truncated]&quot;;.
         /// </summary>
         public static string Config {
             get {
