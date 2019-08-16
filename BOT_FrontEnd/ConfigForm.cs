@@ -1,12 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.Linq;
-using System.Text;
 using System.Windows.Forms;
+
+#if _WINDOWS
 using SlimDX.DirectInput;
+#endif
 
 namespace BOT_FrontEnd
 {
@@ -25,17 +25,22 @@ namespace BOT_FrontEnd
         private long full_scale;
 
         private Controller activeController;
-        private ChannelNumber activeChannel;
+        private ChannelNumber activeChannel = ChannelNumber.NUM_CHANNELS;
         private ControllerProperty activeInput;
         private bool inputSelected = false;
         private bool inputInverted = false;
 
         public ConfigForm(ref Controller ctl, ref Config cfg)
         {
+#if _WINDOWS
             DeviceInstance di = ctl.getCurrentDeviceInstance();
+#endif
             
             InitializeComponent();
             activeController = ctl;
+#if !_WINDOWS
+            activeController.RestartController();
+#endif
             activeConfig = cfg;
             activeController.Poll();
             full_scale = activeController.getFS();
@@ -92,46 +97,86 @@ namespace BOT_FrontEnd
         private void btnCH1_Click(object sender, EventArgs e)
         {
             inputSelected = false;
-            activeChannel = ChannelNumber.CH1;
-            label1.BackColor = Color.Blue;
-            UpdatePreviousState();
-            StartControllerInput();
+            UpdateInputLabels();
+            if(activeChannel == ChannelNumber.CH1)
+            {
+                StopControllerInput();
+            }
+            else
+            {
+                activeChannel = ChannelNumber.CH1;
+                label1.BackColor = Color.Blue;
+                UpdatePreviousState();
+                StartControllerInput();
+            } 
         }
 
         private void btnCH2_Click(object sender, EventArgs e)
         {
             inputSelected = false;
-            activeChannel = ChannelNumber.CH2;
-            label2.BackColor = Color.Blue;
-            UpdatePreviousState();
-            StartControllerInput();
+            UpdateInputLabels();
+            if (activeChannel == ChannelNumber.CH2)
+            {
+                StopControllerInput();
+            }
+            else
+            {
+                activeChannel = ChannelNumber.CH2;
+                label2.BackColor = Color.Blue;
+                UpdatePreviousState();
+                StartControllerInput();
+            }
         }
 
         private void btnCH3_Click(object sender, EventArgs e)
         {
             inputSelected = false;
-            activeChannel = ChannelNumber.CH3;
-            label3.BackColor = Color.Blue;
-            UpdatePreviousState();
-            StartControllerInput();
+            UpdateInputLabels();
+            if (activeChannel == ChannelNumber.CH3)
+            {
+                StopControllerInput();
+            }
+            else
+            {
+                activeChannel = ChannelNumber.CH3;
+                label3.BackColor = Color.Blue;
+                UpdatePreviousState();
+                StartControllerInput();
+            }
         }
 
         private void btnCH4_Click(object sender, EventArgs e)
         {
             inputSelected = false;
-            activeChannel = ChannelNumber.CH4;
-            label4.BackColor = Color.Blue;
-            UpdatePreviousState();
-            StartControllerInput();
+            UpdateInputLabels();
+            if (activeChannel == ChannelNumber.CH4)
+            {
+                StopControllerInput();
+            }
+            else
+            {
+                activeChannel = ChannelNumber.CH4;
+                label4.BackColor = Color.Blue;
+                UpdatePreviousState();
+                StartControllerInput();
+            }
         }
 
         private void btnCH5_Click(object sender, EventArgs e)
         {
             inputSelected = false;
-            activeChannel = ChannelNumber.CH5;
-            label5.BackColor = Color.Blue;
-            UpdatePreviousState();
-            StartControllerInput();
+            UpdateInputLabels();
+            if (activeChannel == ChannelNumber.CH5)
+            {
+                StopControllerInput();
+            }
+            else
+            {
+                activeChannel = ChannelNumber.CH5;
+                label5.BackColor = Color.Blue;
+                UpdatePreviousState();
+                StartControllerInput();
+            }
         }
 
         /********************************************************************************
@@ -141,8 +186,11 @@ namespace BOT_FrontEnd
          ********************************************************************************/
         private void StartControllerInput()
         {
-            ControllerPoller.RunWorkerAsync();
-            System.Threading.Thread.Sleep(10);
+            if (!ControllerPoller.IsBusy)
+            {
+                ControllerPoller.RunWorkerAsync();
+                System.Threading.Thread.Sleep(50);
+            }
         }
 
         /********************************************************************************
@@ -157,57 +205,60 @@ namespace BOT_FrontEnd
             Control[] labels = {label1, label2, label3, label4, label5};
             String temp_str = "";
 
-            foreach(ControllerProperty cp in ChannelMapping)
+            if (ChannelMapping != null)
             {
-                switch(cp)
+                foreach (ControllerProperty cp in ChannelMapping)
                 {
-                    case ControllerProperty.X:
-                        temp_str = StringEnum.GetStringValue(ControllerProperty.X);
-                        break;
-                    case ControllerProperty.Y:
-                        temp_str = StringEnum.GetStringValue(ControllerProperty.Y);
-                        break;
-                    case ControllerProperty.Z:
-                        temp_str = StringEnum.GetStringValue(ControllerProperty.Z);
-                        break;
-                    case ControllerProperty.RotationX:
-                        temp_str = StringEnum.GetStringValue(ControllerProperty.RotationX);
-                        break;
-                    case ControllerProperty.RotationY:
-                        temp_str = StringEnum.GetStringValue(ControllerProperty.RotationY);
-                        break;
-                    case ControllerProperty.RotationZ:
-                        temp_str = StringEnum.GetStringValue(ControllerProperty.RotationZ);
-                        break;
-                    case ControllerProperty.Button_0:
-                        temp_str = StringEnum.GetStringValue(ControllerProperty.Button_0);
-                        break;
-                    case ControllerProperty.Button_1:
-                        temp_str = StringEnum.GetStringValue(ControllerProperty.Button_1);
-                        break;
-                    case ControllerProperty.Button_2:
-                        temp_str = StringEnum.GetStringValue(ControllerProperty.Button_2);
-                        break;
-                    case ControllerProperty.Button_3:
-                        temp_str = StringEnum.GetStringValue(ControllerProperty.Button_3);
-                        break;
-                    case ControllerProperty.Button_4:
-                        temp_str = StringEnum.GetStringValue(ControllerProperty.Button_4);
-                        break;
-                    default:
-                        break;
-                }
+                    switch (cp)
+                    {
+                        case ControllerProperty.X:
+                            temp_str = StringEnum.GetStringValue(ControllerProperty.X);
+                            break;
+                        case ControllerProperty.Y:
+                            temp_str = StringEnum.GetStringValue(ControllerProperty.Y);
+                            break;
+                        case ControllerProperty.Z:
+                            temp_str = StringEnum.GetStringValue(ControllerProperty.Z);
+                            break;
+                        case ControllerProperty.RotationX:
+                            temp_str = StringEnum.GetStringValue(ControllerProperty.RotationX);
+                            break;
+                        case ControllerProperty.RotationY:
+                            temp_str = StringEnum.GetStringValue(ControllerProperty.RotationY);
+                            break;
+                        case ControllerProperty.RotationZ:
+                            temp_str = StringEnum.GetStringValue(ControllerProperty.RotationZ);
+                            break;
+                        case ControllerProperty.Button_0:
+                            temp_str = StringEnum.GetStringValue(ControllerProperty.Button_0);
+                            break;
+                        case ControllerProperty.Button_1:
+                            temp_str = StringEnum.GetStringValue(ControllerProperty.Button_1);
+                            break;
+                        case ControllerProperty.Button_2:
+                            temp_str = StringEnum.GetStringValue(ControllerProperty.Button_2);
+                            break;
+                        case ControllerProperty.Button_3:
+                            temp_str = StringEnum.GetStringValue(ControllerProperty.Button_3);
+                            break;
+                        case ControllerProperty.Button_4:
+                            temp_str = StringEnum.GetStringValue(ControllerProperty.Button_4);
+                            break;
+                        default:
+                            break;
+                    }
 
-                if (ChannelInverted[index] == true)
-                {
-                    temp_str = "-" + temp_str;
-                }
+                    if (ChannelInverted[index] == true)
+                    {
+                        temp_str = "-" + temp_str;
+                    }
 
-                labels[index].Text = temp_str;
-                labels[index].Font = new Font(labels[index].Font, FontStyle.Bold);
-                labels[index].BackColor = SystemColors.Control;
-                index++;
-            }
+                    labels[index].Text = temp_str;
+                    labels[index].Font = new Font(labels[index].Font, FontStyle.Bold);
+                    labels[index].BackColor = SystemColors.Control;
+                    index++;
+                }
+            } 
         }
 
         /********************************************************************************
@@ -245,6 +296,9 @@ namespace BOT_FrontEnd
         private void ControllerPoller_DoWork(object sender, DoWorkEventArgs e)
         {
             BackgroundWorker worker = sender as BackgroundWorker;
+#if !_WINDOWS
+            activeController.RestartController();
+#endif
 
             while (!inputSelected)
             {
@@ -274,6 +328,10 @@ namespace BOT_FrontEnd
         {
             UpdateInputLabels();
 
+#if !_WINDOWS
+            activeController.RestartController();
+#endif
+
             if (e.Error != null)
             {
                 throw (e.Error);
@@ -293,7 +351,7 @@ namespace BOT_FrontEnd
             bool[] buttons;
 
             state = activeController.getState();
-            buttons = state.GetButtons();
+            buttons = state.GetButtons().ToArray();
             inputInverted = false;
 
             for (int i = 0; i < (int)ControllerProperty.NUM_BUTTONS; i++)

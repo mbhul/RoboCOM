@@ -15,7 +15,11 @@ namespace BOT_FrontEnd
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());
+            SplashScreen splash = new SplashScreen();
+            splash.Show();
+            Application.DoEvents();
+            Application.Run(new Form1(ref splash));
+            splash.Close();
         }
     }
 }

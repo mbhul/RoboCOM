@@ -37,6 +37,7 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.OutComTxt = new System.Windows.Forms.RichTextBox();
             this.OutComLbl = new System.Windows.Forms.Label();
             this.OpenFileDlg = new System.Windows.Forms.OpenFileDialog();
@@ -67,6 +68,7 @@
             this.SaveFileBtn = new System.Windows.Forms.Button();
             this.OpenFileBtn = new System.Windows.Forms.Button();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.btnPlane = new System.Windows.Forms.Button();
             this.InComTxt = new System.Windows.Forms.RichTextBox();
             this.PadXY_View = new System.Windows.Forms.PictureBox();
             this.PadZ_View = new System.Windows.Forms.PictureBox();
@@ -82,6 +84,7 @@
             this.label2 = new System.Windows.Forms.Label();
             this.InComLbl = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
+            this.tempTimer = new System.Windows.Forms.Timer(this.components);
             this.groupBox1.SuspendLayout();
             this.PadInPanel.SuspendLayout();
             this.groupBox3.SuspendLayout();
@@ -125,7 +128,6 @@
             // MyVCOM
             // 
             this.MyVCOM.BaudRate = 115200;
-            this.MyVCOM.DiscardNull = true;
             this.MyVCOM.DtrEnable = true;
             this.MyVCOM.PortName = "COM5";
             this.MyVCOM.ReadBufferSize = 2048;
@@ -174,15 +176,15 @@
             // PortNumber
             // 
             this.PortNumber.FormattingEnabled = true;
-            this.PortNumber.Location = new System.Drawing.Point(193, 23);
+            this.PortNumber.Location = new System.Drawing.Point(51, 57);
             this.PortNumber.Name = "PortNumber";
-            this.PortNumber.Size = new System.Drawing.Size(41, 21);
+            this.PortNumber.Size = new System.Drawing.Size(92, 21);
             this.PortNumber.TabIndex = 8;
             // 
             // textBox2
             // 
             this.textBox2.Enabled = false;
-            this.textBox2.Location = new System.Drawing.Point(67, 54);
+            this.textBox2.Location = new System.Drawing.Point(190, 23);
             this.textBox2.Name = "textBox2";
             this.textBox2.ReadOnly = true;
             this.textBox2.Size = new System.Drawing.Size(44, 20);
@@ -194,7 +196,7 @@
             // 
             this.label6.AutoSize = true;
             this.label6.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label6.Location = new System.Drawing.Point(6, 57);
+            this.label6.Location = new System.Drawing.Point(152, 27);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(36, 13);
             this.label6.TabIndex = 6;
@@ -202,7 +204,6 @@
             // 
             // textBox1
             // 
-            this.textBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.textBox1.Enabled = false;
             this.textBox1.Location = new System.Drawing.Point(210, 53);
             this.textBox1.Name = "textBox1";
@@ -214,7 +215,6 @@
             // 
             // label5
             // 
-            this.label5.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label5.AutoSize = true;
             this.label5.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label5.Location = new System.Drawing.Point(152, 57);
@@ -248,10 +248,9 @@
             // 
             // label3
             // 
-            this.label3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label3.AutoSize = true;
             this.label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label3.Location = new System.Drawing.Point(152, 27);
+            this.label3.Location = new System.Drawing.Point(6, 60);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(39, 13);
             this.label3.TabIndex = 0;
@@ -337,6 +336,7 @@
             this.ControllerSelect.Size = new System.Drawing.Size(226, 21);
             this.ControllerSelect.TabIndex = 0;
             this.ControllerSelect.SelectedIndexChanged += new System.EventHandler(this.ControllerSelect_SelectedIndexChanged);
+            this.ControllerSelect.SelectionChangeCommitted += new System.EventHandler(this.ControllerSelect_SelectionCommited);
             // 
             // tableLayoutPanel1
             // 
@@ -350,7 +350,7 @@
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 1;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 262F));
             this.tableLayoutPanel1.Size = new System.Drawing.Size(701, 483);
             this.tableLayoutPanel1.TabIndex = 22;
             // 
@@ -409,6 +409,7 @@
             // 
             // panel1
             // 
+            this.panel1.Controls.Add(this.btnPlane);
             this.panel1.Controls.Add(this.InComTxt);
             this.panel1.Controls.Add(this.PadXY_View);
             this.panel1.Controls.Add(this.PadZ_View);
@@ -423,14 +424,25 @@
             this.panel1.Size = new System.Drawing.Size(439, 477);
             this.panel1.TabIndex = 23;
             // 
+            // btnPlane
+            // 
+            this.btnPlane.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnPlane.Image = ((System.Drawing.Image)(resources.GetObject("btnPlane.Image")));
+            this.btnPlane.Location = new System.Drawing.Point(393, 61);
+            this.btnPlane.Name = "btnPlane";
+            this.btnPlane.Size = new System.Drawing.Size(43, 27);
+            this.btnPlane.TabIndex = 22;
+            this.btnPlane.UseVisualStyleBackColor = true;
+            this.btnPlane.Click += new System.EventHandler(this.BtnPlane_Click);
+            // 
             // InComTxt
             // 
             this.InComTxt.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.InComTxt.Location = new System.Drawing.Point(5, 85);
+            this.InComTxt.Location = new System.Drawing.Point(5, 90);
             this.InComTxt.Name = "InComTxt";
-            this.InComTxt.Size = new System.Drawing.Size(431, 383);
+            this.InComTxt.Size = new System.Drawing.Size(431, 378);
             this.InComTxt.TabIndex = 12;
             this.InComTxt.Text = "";
             this.InComTxt.TextChanged += new System.EventHandler(this.InComTxt_TextChanged);
@@ -523,10 +535,9 @@
             // 
             // ConnStatusLbl
             // 
-            this.ConnStatusLbl.AutoSize = true;
-            this.ConnStatusLbl.Location = new System.Drawing.Point(327, 34);
+            this.ConnStatusLbl.Location = new System.Drawing.Point(324, 35);
             this.ConnStatusLbl.Name = "ConnStatusLbl";
-            this.ConnStatusLbl.Size = new System.Drawing.Size(92, 13);
+            this.ConnStatusLbl.Size = new System.Drawing.Size(100, 13);
             this.ConnStatusLbl.TabIndex = 13;
             this.ConnStatusLbl.Text = "Not Connected";
             // 
@@ -534,7 +545,7 @@
             // 
             this.label7.AutoSize = true;
             this.label7.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label7.Location = new System.Drawing.Point(327, 14);
+            this.label7.Location = new System.Drawing.Point(324, 14);
             this.label7.Name = "label7";
             this.label7.Size = new System.Drawing.Size(97, 13);
             this.label7.TabIndex = 12;
@@ -597,15 +608,24 @@
             this.label1.TabIndex = 17;
             this.label1.Text = "X";
             // 
+            // tempTimer
+            // 
+            this.tempTimer.Tick += new System.EventHandler(this.tempTimer_Tick);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(701, 483);
             this.Controls.Add(this.tableLayoutPanel1);
+            this.KeyPreview = true;
             this.Name = "Form1";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "BOT COM";
             this.Load += new System.EventHandler(this.Form_Load);
+            this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.Form_KeyDown);
+            this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.Form_KeyUp);
+            this.PreviewKeyDown += new System.Windows.Forms.PreviewKeyDownEventHandler(this.Form_PreviewKeyDown);
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
             this.PadInPanel.ResumeLayout(false);
@@ -673,6 +693,8 @@
         private System.Windows.Forms.ComboBox PortNumber;
         private System.Windows.Forms.CheckBox chkRepeat;
         private System.Windows.Forms.Button btnCtlSettings;
+        private System.Windows.Forms.Button btnPlane;
+        private System.Windows.Forms.Timer tempTimer;
     }
 }
 

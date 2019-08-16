@@ -1,20 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <BotConfig>
+  <PythonPath >C:\Users\Mike\AppData\Local\Programs\Python\Python37-32\python.exe</PythonPath>
   <Controller GUID="Default">
-    <StartOfFrame type="absolute" enable="true">G90</StartOfFrame>
-    <StartOfFrame type="relative" enable="true">G91</StartOfFrame>
-    <OutputChannels>
-      <Channel param="CH1" enable="true" default="1000" precision="0000" min="1000" max="2000" map="1" persist="true" accum="false" gain="0.1">Z</Channel>
-      <Channel param="CH2" enable="true" default="1500" precision="0000" min="1000" max="2000" map="2" gain="0.025">X</Channel>
-      <Channel param="CH3" enable="true" default="1500" precision="0000" min="1000" max="2000" map="3" gain="0.025">Y</Channel>
-      <Channel param="CH4" enable="true" default="1500" precision="0000" min="1000" max="2000" map="4" gain="0.025">A</Channel>
-      <Channel param="CH5" enable="true" default="1500" precision="0000" min="1000" max="2000" map="5" gain="0.025">B</Channel>
-    </OutputChannels>
-    <ChannelSeparator>,</ChannelSeparator>
-    <StopCommand enable="true">1000,1500,1500,1500;</StopCommand>
-  </Controller>
-  <!--TODO: Update configuration to save specific configs for specific controllers -->
-  <Controller GUID="3d3b5960-2bb7-11e9-8001-444553540000">
     <StartOfFrame type="absolute" enable="true"></StartOfFrame>
     <StartOfFrame type="relative" enable="true"></StartOfFrame>
     <OutputChannels>

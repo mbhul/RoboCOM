@@ -1,12 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+
+#if _WINDOWS
 using SlimDX.DirectInput;
+#endif
 
 namespace BOT_FrontEnd
 {
     //Wrapping class for a DirectX input device (ie. gamepad)
+
+#if _WINDOWS
     public class Controller
     {
         private DirectInput directInput;
@@ -196,4 +200,5 @@ namespace BOT_FrontEnd
         }
         
     }
+#endif
 }

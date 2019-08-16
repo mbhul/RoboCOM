@@ -3,34 +3,52 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.IO;
 using System.Windows.Forms;
-using SlimDX.DirectInput;
 using System.Runtime.InteropServices;
-using System.Xml;
+using System.Text.RegularExpressions;
+using X11;
+
+#if _WINDOWS
+using SlimDX.DirectInput;
+#endif
 
 namespace BOT_FrontEnd
 {
     public partial class Form1 : Form
     {
-        //const float SPEED = 25; //mm/s
+        
         //Maximum number of command lines to maintain in the rich text box for history. 
-        const int MAX_CMD_LINES = 10000;
-
+        const int MAX_CMD_LINES = 15;
         private Controller controller;
 
+#if _WINDOWS
+        private DirectInput DI;
         private List<Guid> connected_controllers;
+#else
+        private List<string> connected_controllers;
+#endif
+
         private bool sent_stop;
         private bool PauseTransfer;
         private double z_value;
         private string command_prev;
 
-        private DirectInput DI;
+        //private Tuple<Keys, bool>[6];
+        private Dictionary<Keys, bool> InputKeys;
         private Config ctlConfig;
+        private bool isDocked = false;
 
-        public Form1()
+        ProcessStartInfo vidLinkPy = new ProcessStartInfo();
+        Process vidLinkProc;
+
+        [DllImport("User32.dll")]
+        static extern int SetForegroundWindow(IntPtr point);
+
+        public Form1(ref SplashScreen sc)
         {
             try
             {
@@ -57,7 +75,25 @@ namespace BOT_FrontEnd
                 ctlConfig = new Config("Config.xml");
                 command_prev = "";
 
+                //Define the valid Keyboard input keys for 'Controller' input
+                InputKeys = new Dictionary<Keys, bool>();
+                InputKeys.Add(Keys.Up, false);
+                InputKeys.Add(Keys.Down, false);
+                InputKeys.Add(Keys.Left, false);
+                InputKeys.Add(Keys.Right, false);
+                InputKeys.Add(Keys.W, false);
+                InputKeys.Add(Keys.S, false);
+
+#if _WINDOWS
                 DI = new DirectInput();
+#endif
+
+                //Add the PreviewKeyDown event handler to every control on the form
+                Control[] ctls = GetAll(this).ToArray<Control>();
+                foreach (Control ctl in ctls)
+                {
+                    ctl.PreviewKeyDown += new System.Windows.Forms.PreviewKeyDownEventHandler(this.Form_PreviewKeyDown);
+                }
             }
             catch (FileLoadException e)
             {
@@ -68,11 +104,24 @@ namespace BOT_FrontEnd
                     sw.WriteLine(e.StackTrace);
                 }
             }
+
+            System.Threading.Thread.Sleep(2000);
+            sc.Close();
         }
 
         private void Form_Load(object sender, EventArgs e)
         {
             
+        }
+
+
+        //Method to get all controls on the form, including nested ones
+        public IEnumerable<Control> GetAll(Control control)
+        {
+            var controls = control.Controls.Cast<Control>();
+
+            return controls.SelectMany(ctrl => GetAll(ctrl))
+                                      .Concat(controls);
         }
 
         /********************************************************************************
@@ -121,6 +170,7 @@ namespace BOT_FrontEnd
          * Description: Find all connected DirectX compatible input devices and populate the dropdown list
          * Parameters:  N/A
          ********************************************************************************/
+#if _WINDOWS
         private void getConnectedControllers()
         {
             ControllerSelect.Items.Clear(); 
@@ -153,6 +203,45 @@ namespace BOT_FrontEnd
             ControllerSelect.Items.Add("Keyboard");
             connected_controllers.Add(new Guid());
         }
+#else
+        private void getConnectedControllers()
+        {
+            ControllerSelect.Items.Clear();
+            controller = new Controller(this.Handle);
+            connected_controllers = new List<string>();
+
+            //Create the worker thread that will poll the selected controller for its current state
+            ControllerPoller.WorkerSupportsCancellation = true;
+            ControllerPoller.DoWork += new DoWorkEventHandler(ControllerPoller_DoWork);
+            ControllerPoller.RunWorkerCompleted += new RunWorkerCompletedEventHandler(ControllerPoller_RunWorkerCompleted);
+
+            //Get the list of connected controllers
+            try
+            {
+                string[] devFiles = Directory.GetFiles("/dev/input/").Select(Path.GetFileName).ToArray();
+
+                if (devFiles.Count() > 0)
+                {
+                    foreach (string fname in devFiles)
+                    {
+                        if (Regex.Match(fname, "js[0-9]*").Success)
+                        {
+                            ControllerSelect.Items.Add(fname);
+                            connected_controllers.Add("/dev/input/" + fname);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+
+            }
+
+            //add the keyboard at the end
+            ControllerSelect.Items.Add("Keyboard");
+            connected_controllers.Add("Keyboard");
+        }
+#endif
 
         /********************************************************************************
          * EVENT HANDLER:   OpenFileBtn_Click
@@ -250,7 +339,15 @@ namespace BOT_FrontEnd
             }
             else //else open the COM port
             {
-                MyVCOM.PortName = "COM" + PortNumber.SelectedItem.ToString();
+                if (IsLinux)
+                {
+                    MyVCOM.PortName = PortNumber.SelectedItem.ToString();
+                }
+                else
+                {
+                    MyVCOM.PortName = "COM" + PortNumber.SelectedItem.ToString();
+                }
+                
                 MyVCOM.BaudRate = Convert.ToInt32(BaudSelect.Text);
                 MyVCOM.DtrEnable = true;
 
@@ -263,7 +360,9 @@ namespace BOT_FrontEnd
                     ConnStatusLbl.ForeColor = Color.Green;
                 }
                 catch (Exception ex)
-                { }
+                {
+                    throw (ex);
+                }
 
                 if (MyVCOM.IsOpen)
                 {
@@ -289,6 +388,13 @@ namespace BOT_FrontEnd
             double x_def, y_def, z_def, a_def, b_def;
             double z_gain;
             bool z_centered = true;
+
+            //If controller selection drop-down is active, then temporarily disable the function until
+            // the selected controller is confirmed
+            if (ControllerSelect.DroppedDown)
+            {
+                return;
+            }
 
             //Store configuration values for later use
             z_fs = (double)ctlConfig.channel_config[(int)ChannelNumber.CH1].MAX -
@@ -339,20 +445,25 @@ namespace BOT_FrontEnd
             if (radioPad.Checked)
             {
                 string cmd = "";
+                
+                if(!this.Focused && !IsLinux && vidLinkProc == null)
+                {
+                    SetForegroundWindow(this.Handle);
+                }
 
-                #region Keyboard Input Selected
+#region Keyboard Input Selected
                 //if 'Keyboard'(arrow keys) is selected as the current method of input
                 if ((String)ControllerSelect.SelectedItem == "Keyboard")
                 {
                     double key_increment = this.controller.getFS() / 2;
 
                     //**** Get key states *****//
-                    x += KeyboardInfo.GetKeyState(Keys.Left).IsPressed ? -0.5 : 0;
-                    x += KeyboardInfo.GetKeyState(Keys.Right).IsPressed ? 0.5 : 0;
-                    y += KeyboardInfo.GetKeyState(Keys.Up).IsPressed ? -0.5 : 0;
-                    y += KeyboardInfo.GetKeyState(Keys.Down).IsPressed ? 0.5 : 0;
-                    z += KeyboardInfo.GetKeyState(Keys.W).IsPressed ? 0.05 : 0;
-                    z += KeyboardInfo.GetKeyState(Keys.S).IsPressed ? -0.05 : 0;
+                    x += this.InputKeys[Keys.Left] ? -0.5 : 0; //KeyboardInfo.GetKeyState(Keys.Left).IsPressed ? -0.5 : 0;
+                    x += this.InputKeys[Keys.Right] ? 0.5 : 0; //KeyboardInfo.GetKeyState(Keys.Right).IsPressed ? 0.5 : 0;
+                    y += this.InputKeys[Keys.Up] ? -0.5 : 0; //KeyboardInfo.GetKeyState(Keys.Up).IsPressed ? -0.5 : 0;
+                    y += this.InputKeys[Keys.Down] ? 0.5 : 0; //KeyboardInfo.GetKeyState(Keys.Down).IsPressed ? 0.5 : 0;
+                    z += this.InputKeys[Keys.W] ? 0.05 : 0; //KeyboardInfo.GetKeyState(Keys.W).IsPressed ? 0.05 : 0;
+                    z += this.InputKeys[Keys.S] ? -0.05 : 0; //KeyboardInfo.GetKeyState(Keys.S).IsPressed ? -0.05 : 0;
 
                     //**** Scale key values for drawing *****//
                     x = (x + 1) * key_increment;
@@ -419,13 +530,20 @@ namespace BOT_FrontEnd
                         sent_stop = true;
                     }
                 }
-                #endregion
-                #region DirectX Controller Selected
+#endregion
+#region DirectX Controller Selected
                 else
                 {
                     JoystickState state = controller.getState();
-                    bool[] buttons = state.GetButtons();
-                    int[] pov = state.GetPointOfViewControllers();
+#if _WINDOWS
+					bool[] buttons = state.GetButtons();
+					int[] pov = state.GetPointOfViewControllers();
+					double angle_A_B = (pov[0] == -1) ? -1 : (pov[0] / 100) * (Math.PI / 180);
+#else
+                    bool[] buttons = state.GetButtons().ToArray();
+					double angle_A_B = 0;
+#endif
+
                     float fs = (float)controller.getFS();
                     bool z_condition = false;
 
@@ -454,8 +572,6 @@ namespace BOT_FrontEnd
                     }
 
                     //**** Convert the values to the configured command scale (in Config.xml) *****//
-                    double angle_A_B = (pov[0] == -1) ? -1 : (pov[0] / 100) * (Math.PI / 180);
-
                     x = ((float)(x - fs / 2) / fs) * x_fs;
                     x += x_def;
 
@@ -544,8 +660,11 @@ namespace BOT_FrontEnd
                         sent_stop = true;
                     }
                 }
-                #endregion
-                ScrollToEnd(InComTxt);
+#endregion
+                if(!IsLinux)
+                {
+                    ScrollToEnd(InComTxt);
+                }
 
                 command_prev = cmd;
             }
@@ -590,7 +709,10 @@ namespace BOT_FrontEnd
                     System.Action a = new System.Action(() =>
                     {
                         OutComTxt.Text += temp;
-                        ScrollToEnd(OutComTxt);
+                        if (!IsLinux)
+                        {
+                            ScrollToEnd(OutComTxt);
+                        }
                     });
                     this.BeginInvoke(a);
 
@@ -666,6 +788,19 @@ namespace BOT_FrontEnd
          ********************************************************************************/
         private void ControllerSelect_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if(SendTimer.Enabled == false)
+            {
+                getControllerConfiguration();
+            }
+        }
+
+        private void ControllerSelect_SelectionCommited(object sender, EventArgs e)
+        {
+            getControllerConfiguration();
+        }
+
+        private void getControllerConfiguration()
+        {
             if ((String)ControllerSelect.SelectedItem == "Keyboard")
             {
                 ctlConfig.GetDefaultConfig();
@@ -688,6 +823,12 @@ namespace BOT_FrontEnd
         private void StartControllerInput()
         {
             controller.SetCurrent(connected_controllers[ControllerSelect.SelectedIndex]);
+
+            while(ControllerPoller.IsBusy)
+            {
+                ControllerPoller.CancelAsync();
+                System.Threading.Thread.Sleep(10);
+            }
             ControllerPoller.RunWorkerAsync();
 
             SendTimer.Interval = (int)TimerIntSelect.Value;
@@ -707,6 +848,7 @@ namespace BOT_FrontEnd
             SendTimer.Stop();
             SendTimer.Enabled = false;
             ControllerPoller.CancelAsync();
+            System.Threading.Thread.Sleep(50);
         }
 
         /********************************************************************************
@@ -813,6 +955,7 @@ namespace BOT_FrontEnd
             }
         }
 
+        //Only works on Windows. 
         [DllImport("User32.dll", CharSet = CharSet.Auto, EntryPoint = "SendMessage")]
         static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
 
@@ -844,9 +987,20 @@ namespace BOT_FrontEnd
         {
             if(InComTxt.Lines.Count() > MAX_CMD_LINES)
             {
-                InComTxt.Select(0, InComTxt.GetFirstCharIndexFromLine(1));
-                InComTxt.SelectedText = "";
+                //InComTxt.Select(0, InComTxt.GetFirstCharIndexFromLine(1));
+                //InComTxt.SelectedText = "";
+                var lines = this.InComTxt.Lines;
+                var newLines = lines.Skip(1);
+                this.InComTxt.Lines = newLines.ToArray();
+                InComTxt.SelectionStart = InComTxt.TextLength;
             }
+            
+            if (!InComTxt.Focused)
+            {
+                InComTxt.Focus();
+            }
+
+            this.InComTxt.ScrollToCaret();
         }
 
         /********************************************************************************
@@ -858,17 +1012,27 @@ namespace BOT_FrontEnd
         {
             if (OutComTxt.Lines.Count() > MAX_CMD_LINES)
             {
-                OutComTxt.Select(0, OutComTxt.GetFirstCharIndexFromLine(1));
-                OutComTxt.SelectedText = "";
+                //OutComTxt.Select(0, OutComTxt.GetFirstCharIndexFromLine(1));
+                //OutComTxt.SelectedText = "";
+                var lines = this.OutComTxt.Lines;
+                var newLines = lines.Skip(1);
+                this.OutComTxt.Lines = newLines.ToArray();
+                OutComTxt.SelectionStart = OutComTxt.TextLength;
             }
+            this.OutComTxt.ScrollToCaret();
         }
 
+        /********************************************************************************
+         * EVENT HANDLER:   btnCtlSettings_Click
+         * Description:     Button click handler for controller settings button                
+         ********************************************************************************/
         private void btnCtlSettings_Click(object sender, EventArgs e)
         {
             ConfigForm configPanel = new ConfigForm(ref this.controller, ref this.ctlConfig);
             StopControllerInput();
 
-            var result = configPanel.ShowDialog();
+            var result = configPanel.ShowDialog(this);
+
             if(result == System.Windows.Forms.DialogResult.OK)
             {
                 controller.SetChannelMapping(configPanel.ChannelMapping, configPanel.ChannelInverted);
@@ -876,8 +1040,299 @@ namespace BOT_FrontEnd
                 ctlConfig.SaveToFile("Config.xml", controller);
             }
 
+#if !_WINDOWS
+            controller.RestartController();
+#endif
+            configPanel.Dispose();
             StartControllerInput();
         }
 
+        /********************************************************************************
+         * EVENT HANDLER:   Form_KeyDown
+         * Description:     Keyboard KeyDown event handler               
+         ********************************************************************************/
+        private void Form_KeyDown(object sender, KeyEventArgs e)
+        {
+            List<Keys> keysCopy = new List<Keys>(this.InputKeys.Keys);
+            bool keyPressedIsInput = false;
+
+            if (this.radioPad.Checked)
+            {
+                foreach (Keys entry in keysCopy)
+                {
+                    if(e.KeyCode == entry)
+                    {
+                        InputKeys[entry] = true;
+                        keyPressedIsInput = true;
+                    }
+                }
+
+                if(keyPressedIsInput)
+                {
+                    e.SuppressKeyPress = true;
+                    e.Handled = true;
+                }
+            }
+
+            Console.WriteLine("Key {0} intercepted by Form", 'q');
+        }
+
+        /********************************************************************************
+         * EVENT HANDLER:   Form_KeyUp
+         * Description:     Keyboard KeyUp event handler               
+         ********************************************************************************/
+        private void Form_KeyUp(object sender, KeyEventArgs e)
+        {
+            List<Keys> keysCopy = new List<Keys>(this.InputKeys.Keys);
+            bool keyPressedIsInput = false;
+
+            if (this.radioPad.Checked)
+            {
+                foreach (Keys entry in keysCopy)
+                {
+                    if (e.KeyCode == entry)
+                    {
+                        InputKeys[entry] = false;
+                        keyPressedIsInput = true;
+                    }
+                }
+
+                if (keyPressedIsInput)
+                {
+                    e.SuppressKeyPress = true;
+                    e.Handled = true;
+                }
+            }
+        }
+
+        /********************************************************************************
+         * EVENT HANDLER:   Form_PreviewKeyDown
+         * Description:     Default handler for all controls' PreviewKeyDown event
+         *                  Needed in order to register arrow key input with the form
+         ********************************************************************************/
+        private void Form_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
+        {
+            switch(e.KeyCode)
+            {
+                case Keys.Up:
+                case Keys.Down:
+                case Keys.Left:
+                case Keys.Right:
+                    e.IsInputKey = true;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        /********************************************************************************
+         * EVENT HANDLER:   BtnPlane_Click
+         * Description:     Handler for the RC plane button. Essentially a built-in mode
+         *                  for the RC ground station project.
+         ********************************************************************************/
+        private void BtnPlane_Click(object sender, EventArgs e)
+        {
+            Rectangle thisScreen;
+            int x, y;
+            String pyPath;
+            bool closeVideo = false;
+
+            thisScreen = Screen.FromControl(this).Bounds;
+
+            //Dock the window at the bottom of the screen to leave room for the video downlink above
+            if (isDocked)
+            {
+                this.TopMost = false;
+
+                //If already docked, then reset the form to default size and position
+                this.Height = 522;
+                this.FormBorderStyle = FormBorderStyle.Sizable;
+                this.btnPlane.BackColor = SystemColors.Control;
+
+                //Set the form in the centre of the screen
+                this.StartPosition = FormStartPosition.CenterScreen;
+                x = (thisScreen.Width - this.Width) / 2;
+                y = (thisScreen.Height - this.Height) / 2;
+
+                closeVideo = true;
+            }
+            else
+            {
+                //The way screen resolution is interpretted seems to be slightly different in Mono
+                // the difference below was determined empirically on my Pi3 running Raspbian
+                if(IsLinux)
+                {
+                    this.Height = 290;
+                }
+                else
+                {
+                    this.Height = 300;
+                }
+                //After re-sizing the form, set it at the bottom of the screen 
+                // and make it not manually resizable
+                this.FormBorderStyle = FormBorderStyle.FixedSingle;
+                this.radioPad.Checked = true;
+                this.btnPlane.BackColor = SystemColors.MenuHighlight;
+
+                this.StartPosition = FormStartPosition.Manual;
+                x = (thisScreen.Width - this.Width) / 2;
+                y = thisScreen.Height - 300;
+
+                //Run the video downlink python script
+                pyPath = this.ctlConfig.SelectNode("//PythonPath");
+                vidLinkPy.FileName = pyPath;
+                vidLinkPy.Arguments = "RCVideoDownlink.py";
+                vidLinkPy.UseShellExecute = true;
+                vidLinkPy.RedirectStandardInput = false;
+
+                vidLinkProc = Process.Start(vidLinkPy);
+
+                //Keep this form on top of the video feed
+                this.TopMost = true;
+            }
+
+            this.Location = new Point(x, y);
+
+            isDocked = !isDocked;
+
+            if(closeVideo)
+            {
+                //tempTimer.Enabled = true;
+                //tempTimer.Start();
+                CloseVideoDownlink();
+            }
+        }
+
+        private void CloseVideoDownlink()
+        {
+            //If the downlink script is still active, then close it
+            if (vidLinkProc != null)
+            {
+                if(!vidLinkProc.HasExited)
+                {
+                    IntPtr h = vidLinkProc.MainWindowHandle;
+
+                    //Linux code doesn't work :(
+                    if (IsLinux)
+                    {
+                        Console.WriteLine("isLinux == true");
+
+                        if (h != IntPtr.Zero)
+                        {
+                            //X11lib.XRaiseWindow(_display, h);
+                            //X11lib.XSetInputFocus(_display, h, X11lib.TRevertTo.RevertToParent, (TInt)0);
+
+                            //Debug
+                            Console.WriteLine("First window handle was not NULL.");
+                        }
+                        else
+                        {
+                            XSendKeystroke('q', "RCVideo");
+                        }
+                    }
+                    else
+                    {
+                        SetForegroundWindow(h);
+                    }
+
+                    SendKeys.SendWait("q");
+                }
+
+                tempTimer.Interval = 1000;
+                tempTimer.Enabled = true;
+                tempTimer.Start();
+            }
+        }
+
+        /********************************************************************************
+         * EVENT HANDLER:   OnClosed
+         * Description:     Main form closed event handler. Used to kill the video downlink
+         *                  python process if it's still alive
+         ********************************************************************************/
+        protected override void OnClosed(EventArgs e)
+        {
+            CloseVideoDownlink();
+        }
+
+        public static bool IsLinux
+        {
+            get
+            {
+                int p = (int)Environment.OSVersion.Platform;
+                return (p == 4) || (p == 6) || (p == 128);
+            }
+        }
+
+        private void XSendKeystroke(char key, string windowTitle)
+        {
+            IntPtr _display = X11lib.XOpenDisplay(String.Empty);
+            IntPtr rootwin = X11lib.XDefaultRootWindow(_display);
+            IntPtr ActiveWindowAtom = X11lib.XInternAtom(_display, "_NET_ACTIVE_WINDOW", false);
+
+            int winIndex = 0;
+            int tempreturn = 0;
+
+            XEvent ev = new XEvent();
+            ev.ClientMessageEvent.type = XEventName.ClientMessage;
+            ev.ClientMessageEvent.message_type = ActiveWindowAtom;
+            ev.ClientMessageEvent.format = 32;
+            ev.ClientMessageEvent.ptr1 = (IntPtr)1U;
+            ev.ClientMessageEvent.ptr2 = (IntPtr)1U;
+            ev.ClientMessageEvent.ptr3 = (IntPtr)0U;
+            ev.ClientMessageEvent.ptr4 = (IntPtr)0U;
+            ev.ClientMessageEvent.ptr5 = (IntPtr)0U;
+
+            XEvent kev = new XEvent();
+            kev.KeyEvent.type = XEventName.KeyPress;
+            kev.KeyEvent.display = _display;
+            kev.KeyEvent.keycode = X11lib.XKeysymToKeycode(_display, 0x0071); //q
+            kev.KeyEvent.root = rootwin;
+            kev.KeyEvent.same_screen = true;
+
+            //Find windows based on title
+            IntPtr[] allWindows = Helpers.FindWindows(_display, windowTitle);
+            if (allWindows.Count() > 0)
+            {
+                X11lib.XSelectInput(_display, allWindows[winIndex], EventMask.KeyPressMask | EventMask.KeyReleaseMask);
+
+                //Raise window to top of stack - works!
+                ev.ClientMessageEvent.window = allWindows[winIndex];
+                tempreturn = (int)X11lib.XSendEvent(_display, rootwin, (TBoolean)0, (TLong)X11.EventMask.SubstructureRedirectMask, ref ev);
+                X11lib.XMapRaised(_display, allWindows[winIndex]);
+
+                //Send key press event - doesn't work :(
+                kev.KeyEvent.window = allWindows[winIndex];
+                tempreturn = (int)X11lib.XSendEvent(_display, allWindows[winIndex], (TBoolean)1, (TLong)X11.EventMask.KeyPressMask, ref kev);
+
+                kev.KeyEvent.type = XEventName.KeyRelease;
+                tempreturn = (int)X11lib.XSendEvent(_display, allWindows[winIndex], (TBoolean)1, (TLong)X11.EventMask.KeyReleaseMask, ref kev);
+                X11lib.XSync(_display, false);
+            }
+            else
+            {
+                Console.WriteLine("No Window found!");
+            }
+
+            X11lib.XCloseDisplay(_display);
+        }
+
+        private void tempTimer_Tick(object sender, EventArgs e)
+        {
+            if(vidLinkProc.HasExited)
+            {
+                vidLinkProc.Close();
+                vidLinkProc.Dispose();
+                vidLinkProc = null;
+                
+                tempTimer.Stop();
+                tempTimer.Enabled = false;
+                Console.WriteLine("vidLinkProc has exited!");
+            }
+            else
+            {
+                XSendKeystroke('q', "RCVideo");
+                SendKeys.SendWait("q");
+            }
+        }
     }
 }
