@@ -34,6 +34,7 @@ namespace BOT_FrontEnd
 
         private bool sent_stop;
         private bool PauseTransfer;
+        private bool cancelBackgroundWorker;
         private double z_value;
         private string command_prev;
 
@@ -55,9 +56,10 @@ namespace BOT_FrontEnd
                 //Initialize and set defaults
                 InitializeComponent();
                 bold_font = new Font(InComTxt.Font, FontStyle.Bold);
-                BaudSelect.SelectedIndex = 2;
+                BaudSelect.SelectedIndex = 0;
                 sent_stop = true;
                 PauseTransfer = false;
+                cancelBackgroundWorker = false;
                 populatePortDropDown();
             
                 ttTimer = new ToolTip();
@@ -329,7 +331,11 @@ namespace BOT_FrontEnd
             //if the COM port is currently open, close it
             if (MyVCOM.IsOpen)
             {
-                SendTimer.Enabled = false;
+                if(!radioPad.Checked)
+                {
+                    SendTimer.Enabled = false;
+                }
+
                 ReadTimer.Enabled = false;
                 MyVCOM.Close();
                 SendBtn.Enabled = false;
@@ -699,7 +705,7 @@ namespace BOT_FrontEnd
                 try
                 {
                     string temp = MyVCOM.ReadLine();
-                    temp.Replace(";", ";\n");
+                    temp.Replace(";", ";\r\n");
 
                     if (temp.Contains("G00"))
                         PauseTransfer = true;
@@ -708,14 +714,15 @@ namespace BOT_FrontEnd
 
                     System.Action a = new System.Action(() =>
                     {
-                        OutComTxt.Text += temp;
+                        OutComTxt.AppendText(temp);
+
                         if (!IsLinux)
                         {
                             ScrollToEnd(OutComTxt);
                         }
+
                     });
                     this.BeginInvoke(a);
-
                 }
                 catch (TimeoutException) { }
             }
@@ -823,14 +830,15 @@ namespace BOT_FrontEnd
         private void StartControllerInput()
         {
             controller.SetCurrent(connected_controllers[ControllerSelect.SelectedIndex]);
+            cancelBackgroundWorker = false;
 
-            while(ControllerPoller.IsBusy)
+            while (ControllerPoller.IsBusy)
             {
                 ControllerPoller.CancelAsync();
-                System.Threading.Thread.Sleep(10);
+                System.Threading.Thread.Sleep(100);
             }
             ControllerPoller.RunWorkerAsync();
-
+            
             SendTimer.Interval = (int)TimerIntSelect.Value;
             SendTimer.Enabled = true;
             SendTimer.Start();
@@ -848,7 +856,9 @@ namespace BOT_FrontEnd
             SendTimer.Stop();
             SendTimer.Enabled = false;
             ControllerPoller.CancelAsync();
-            System.Threading.Thread.Sleep(50);
+            cancelBackgroundWorker = true;
+            Console.WriteLine("Cancellation Requested.");
+            System.Threading.Thread.Sleep(100);
         }
 
         /********************************************************************************
@@ -931,16 +941,24 @@ namespace BOT_FrontEnd
         private void ControllerPoller_DoWork(object sender, DoWorkEventArgs e)
         {
             BackgroundWorker worker = sender as BackgroundWorker;
+            //Console.WriteLine("Poll Start");
+            //int count = 0;
+
             while (true)
             {
-                if (worker.CancellationPending == true)
+                if (cancelBackgroundWorker) //worker.CancellationPending == true || 
                 {
+                    Console.WriteLine("Cancellation Pending.");
                     e.Cancel = true;
                     break;
                 }
                 controller.Poll();
                 System.Threading.Thread.Sleep(10);
+
+                //count++;
+                //Console.WriteLine("Poll Count: " + count.ToString());
             }
+            //Console.WriteLine("Poll End");
         }
 
         /********************************************************************************
@@ -953,6 +971,7 @@ namespace BOT_FrontEnd
             {
                 throw (e.Error);
             }
+            //Console.WriteLine("Worker Completed");
         }
 
         //Only works on Windows. 
@@ -985,16 +1004,14 @@ namespace BOT_FrontEnd
          ********************************************************************************/
         private void InComTxt_TextChanged(object sender, EventArgs e)
         {
-            if(InComTxt.Lines.Count() > MAX_CMD_LINES)
+            if (InComTxt.Lines.Count() > MAX_CMD_LINES)
             {
-                //InComTxt.Select(0, InComTxt.GetFirstCharIndexFromLine(1));
-                //InComTxt.SelectedText = "";
                 var lines = this.InComTxt.Lines;
                 var newLines = lines.Skip(1);
                 this.InComTxt.Lines = newLines.ToArray();
                 InComTxt.SelectionStart = InComTxt.TextLength;
             }
-            
+
             if (!InComTxt.Focused)
             {
                 InComTxt.Focus();
@@ -1010,15 +1027,18 @@ namespace BOT_FrontEnd
          ********************************************************************************/
         private void OutComTxt_TextChanged(object sender, EventArgs e)
         {
-            if (OutComTxt.Lines.Count() > MAX_CMD_LINES)
+            int linecount = OutComTxt.GetLineFromCharIndex(OutComTxt.TextLength);
+            //Console.WriteLine("OutComTxt Lines: " + linecount);
+            //linecount = OutComTxt.Lines.Count(); //doesn't work on RPi. Lines Array only contains 1 element.
+
+            if (linecount > MAX_CMD_LINES)
             {
-                //OutComTxt.Select(0, OutComTxt.GetFirstCharIndexFromLine(1));
-                //OutComTxt.SelectedText = "";
                 var lines = this.OutComTxt.Lines;
                 var newLines = lines.Skip(1);
                 this.OutComTxt.Lines = newLines.ToArray();
                 OutComTxt.SelectionStart = OutComTxt.TextLength;
             }
+
             this.OutComTxt.ScrollToCaret();
         }
 

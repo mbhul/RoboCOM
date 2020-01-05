@@ -2,6 +2,7 @@
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace BOT_FrontEnd
 {
@@ -50,7 +51,7 @@ namespace BOT_FrontEnd
             {
                 JFS.Close();
             }
-            JFS = new FileStream(inputFileName, FileMode.Open, FileAccess.Read, FileShare.Read);
+            JFS = new FileStream(inputFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
             currentDevice = new JoystickLx();
             buff = new byte[8];
@@ -73,7 +74,7 @@ namespace BOT_FrontEnd
                 {
                     JFS.Close();
                 }
-                JFS = new FileStream(InputFile, FileMode.Open, FileAccess.Read, FileShare.Read);
+                JFS = new FileStream(InputFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             } 
         }
 
@@ -84,50 +85,53 @@ namespace BOT_FrontEnd
          ********************************************************************************/
         public void Poll()
         {
-            //currentDevice.Poll();
-            //deviceState = currentDevice.GetCurrentState();
-
             // Read 8 bytes from file and analyze.
             if(JFS != null && currentDevice != null)
             {
-                JFS.Read(buff, 0, 8);
-                currentDevice.DetectChange(buff);
-                this.getState();
+                int bytesRead = JFS.Read(buff, 0, 8);
+                //int bytesRead = await JFS.ReadAsync(buff, 0, 8);
 
-                if (ChannelMapping != null)
+                if(bytesRead >= 8)
                 {
-                    for (int i = 0; i < (int)ChannelNumber.NUM_CHANNELS; i++)
-                    {
-                        switch (ChannelMapping[i])
-                        {
-                            case ControllerProperty.X:
-                                CHANNEL[i] = deviceState.X;
-                                break;
-                            case ControllerProperty.Y:
-                                CHANNEL[i] = deviceState.Y;
-                                break;
-                            case ControllerProperty.Z:
-                                CHANNEL[i] = deviceState.Z;
-                                break;
-                            case ControllerProperty.RotationX:
-                                CHANNEL[i] = deviceState.RotationX;
-                                break;
-                            case ControllerProperty.RotationY:
-                                CHANNEL[i] = deviceState.RotationY;
-                                break;
-                            case ControllerProperty.RotationZ:
-                                CHANNEL[i] = deviceState.RotationZ;
-                                break;
-                            default:
-                                break;
-                        }
+                    currentDevice.DetectChange(buff);
+                    this.getState();
 
-                        if (ChannelInverted[i])
+                    if (ChannelMapping != null)
+                    {
+                        for (int i = 0; i < (int)ChannelNumber.NUM_CHANNELS; i++)
                         {
-                            CHANNEL[i] = (int)full_scale - CHANNEL[i];
+                            switch (ChannelMapping[i])
+                            {
+                                case ControllerProperty.X:
+                                    CHANNEL[i] = deviceState.X;
+                                    break;
+                                case ControllerProperty.Y:
+                                    CHANNEL[i] = deviceState.Y;
+                                    break;
+                                case ControllerProperty.Z:
+                                    CHANNEL[i] = deviceState.Z;
+                                    break;
+                                case ControllerProperty.RotationX:
+                                    CHANNEL[i] = deviceState.RotationX;
+                                    break;
+                                case ControllerProperty.RotationY:
+                                    CHANNEL[i] = deviceState.RotationY;
+                                    break;
+                                case ControllerProperty.RotationZ:
+                                    CHANNEL[i] = deviceState.RotationZ;
+                                    break;
+                                default:
+                                    break;
+                            }
+
+                            if (ChannelInverted[i])
+                            {
+                                CHANNEL[i] = (int)full_scale - CHANNEL[i];
+                            }
                         }
                     }
                 }
+                
             } 
         }
 
