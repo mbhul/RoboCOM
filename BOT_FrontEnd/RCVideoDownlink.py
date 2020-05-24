@@ -1,62 +1,82 @@
+import sys
 import cv2
 import time
 import imutils
 from numpy import *
-from PIL import Image 
+#from PIL import Image 
 from screeninfo import get_monitors
-from imutils.video import WebcamVideoStream
 from imutils.video import FPS
+from RCVideoStream import RCVideoStream
+from RCVideoStream import RCVideoWriter
 
-print("Get Camera")
-cam = cv2.VideoCapture(0)
+print("Start Capture")
 
 m_list = get_monitors()
-print(str(m_list[0].width))
+print("Screen Width: ", str(m_list[0].width))
 
-screen_height = m_list[0].height - 100
+screen_height = m_list[0].height - 200
 screen_width = m_list[0].width
-background = zeros((screen_height,screen_width,3), uint8)
+
+if len(sys.argv) > 1:
+    save_vid_stream = bool(sys.argv[1])
+else:
+    save_vid_stream = False
 
 print("Read Frames")
-vs = WebcamVideoStream(src=0).start()
+vs = RCVideoStream(src=0).start()
 fps = FPS().start()
 
+frame_counter = 0
+
+#Calculate the desired frame size once
+frame = vs.read()
+
+#ratio of screen height to frame height
+scale_percent_h = int((float(screen_height) / float(frame.shape[0])) * 100)
+
+#new width scaled by percentage required to reach full screen height
+width = int(frame.shape[1] * scale_percent_h / 100)
+
+x = int((screen_width - width) / 2)
+vs.resize(width,screen_height,x)
+time.sleep(0.1)
+
+#Note: dimensions of the VideoWriter have to be EXACTLY the same size as the frame
+if save_vid_stream == True:
+    print("Open file to save the video stream")
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = RCVideoWriter('output.mp4', fourcc, 60, ((width + (2*x)),screen_height))
+    out.start()
+
 while(True):
-   #ret,frame = cam.read()
-   frame = vs.read()
-  
-   scale_percent_h = int((float(screen_height) / float(frame.shape[0])) * 100)
-   scale_percent_w = int((float(screen_width) / float(frame.shape[1])) * 100)
-   
-   #scale_percent = 200 # percent of original size
-   width = int(frame.shape[1] * scale_percent_h / 100)
-   height = int(frame.shape[0] * scale_percent_h / 100)
-   dim = (width, height)
-   
-   x = int((screen_width - width) / 2)
-   y = m_list[0].y
-   
-   # resize image
-   #resized = cv2.resize(frame, dim, interpolation = cv2.INTER_AREA) 
-   resized = imutils.resize(frame, width)
-   
-   # frame on larger background
-   #background[y:y+frame.shape[0], x:x+frame.shape[1]] = frame
-   background[y:y+resized.shape[0], x:x+resized.shape[1]] = resized
+    frame = vs.read()
 
-   if not frame is None:
-      #cv2.imshow('RCVideo',frame)
-      cv2.imshow('RCVideo',background)
-      cv2.moveWindow('RCVideo', 0, 0) #moveWindow('frame', x, y)
-      
-   if (cv2.waitKey(1) & 0xff == ord('q')):
-      break
-   
-   fps.update()
+    if not frame is None:
+        #Write frame to video 
+        if save_vid_stream == True:
+             out.write(frame)
+             
+        cv2.imshow('RCVideo',frame)
+        cv2.moveWindow('RCVideo', 0, 0)
 
-fps.stop()
-print("[INFO] elasped time: {:.2f}".format(fps.elapsed()))
-print("[INFO] approx. FPS: {:.2f}".format(fps.fps()))
+    #time.sleep(0.005)
     
-cam.release()
+    if (cv2.waitKey(1) & 0xff == ord('q')):
+        break
+    
+    fps.update()
+    
+#END WHILE
+vs.stop()
+fps.stop()
+
+if save_vid_stream == True:
+    out.stop()
+    print("Stopping Video Writer")
+    time.sleep(1)
+    print("Effective Output FPS: ", out.avg_fps)
+
+#print("[INFO] elasped time: {:.2f}".format(fps.elapsed()))
+print("[INFO] approx. FPS: {:.2f}".format(fps.fps()))
+ 
 cv2.destroyAllWindows()

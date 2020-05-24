@@ -173,14 +173,30 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Config.xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <SubType>Designer</SubType>
     </Content>
-    <Content Include="RCVideoDownlink.py">
+    <Content Include="RCVideoDownlink.py" />
+    <Content Include="RCVideoStream.py" />
+    <Content Include="ReadMe.txt" />
+    <Content Include="__init__.py">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>if "$(DefineConstants.Contains('_WINDOWS'))" == "True" (
+
+  copy "$(ProjectDir)\RCVideoDownlink.py" "$(TargetDir)\RCVideoDownlink.py"
+  copy "$(ProjectDir)\RCVideoStream.py" "$(TargetDir)\RCVideoStream.py"
+
+) ELSE (
+
+  copy "$(ProjectDir)\PiPyVideo\RCVideoDownlink.py" "$(TargetDir)\RCVideoDownlink.py"
+  copy "$(ProjectDir)\PiPyVideo\RCVideoStream.py" "$(TargetDir)\RCVideoStream.py"
+
+)</PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

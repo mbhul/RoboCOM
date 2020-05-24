@@ -89,7 +89,6 @@ namespace BOT_FrontEnd
             if(JFS != null && currentDevice != null)
             {
                 int bytesRead = JFS.Read(buff, 0, 8);
-                //int bytesRead = await JFS.ReadAsync(buff, 0, 8);
 
                 if(bytesRead >= 8)
                 {

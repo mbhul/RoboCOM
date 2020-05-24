@@ -1156,6 +1156,7 @@ namespace BOT_FrontEnd
             int x, y;
             String pyPath;
             bool closeVideo = false;
+            bool saveVideo = false;
 
             thisScreen = Screen.FromControl(this).Bounds;
 
@@ -1178,9 +1179,15 @@ namespace BOT_FrontEnd
             }
             else
             {
+                DialogResult dialogResult = MessageBox.Show("Save video stream to file?", "Video", MessageBoxButtons.YesNo);
+                if (dialogResult == DialogResult.Yes)
+                {
+                    saveVideo = true;
+                }
+
                 //The way screen resolution is interpretted seems to be slightly different in Mono
                 // the difference below was determined empirically on my Pi3 running Raspbian
-                if(IsLinux)
+                if (IsLinux)
                 {
                     this.Height = 290;
                 }
@@ -1204,6 +1211,11 @@ namespace BOT_FrontEnd
                 vidLinkPy.Arguments = "RCVideoDownlink.py";
                 vidLinkPy.UseShellExecute = true;
                 vidLinkPy.RedirectStandardInput = false;
+
+                if (saveVideo)
+                {
+                    vidLinkPy.Arguments += " True";
+                }
 
                 vidLinkProc = Process.Start(vidLinkPy);
 
